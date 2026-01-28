@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"F:\\\\codes\\\\SkillLauncher\" log --oneline -10)",
+      "Bash(powershell.exe:*)",
+      "Bash(Get-ChildItem -Path \"F:\\\\codes\\\\skillLauncher-windows\" -Recurse -Force)",
+      "Bash(Select-Object FullName, Mode)",
+      "Bash(npm install @fluentui/react-icons)",
+      "Bash(npm install @tauri-apps/plugin-fs)",
+      "Bash(cmd.exe /c \"npm run tauri dev\")"
+    ]
+  }
+}
