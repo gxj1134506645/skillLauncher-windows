@@ -13,6 +13,8 @@ export interface Skill {
   command?: string;
   /** Skill category / Skill 分类 */
   category?: string;
+  /** Skill marketplace source / Skill 来源市场 */
+  marketplace?: string;
   /** Skill icon / Skill 图标 */
   icon?: string;
   /** Skill shortcut key / Skill 快捷键 */

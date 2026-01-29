@@ -163,6 +163,57 @@ function getSkillEmoji(skillName: string): string {
   return "✨";
 }
 
+/**
+ * 根据 marketplace 获取对应的颜色
+ * Get color by marketplace
+ */
+function getMarketplaceColor(marketplace?: string): string {
+  if (!marketplace) return "#888888"; // 默认灰色 / Default gray
+
+  const normalized = marketplace.toLowerCase();
+
+  // 为不同 marketplace 分配不同的颜色 / Assign different colors for different marketplaces
+  const marketplaceColors: Record<string, string> = {
+    // Anthropic Official - 紫色系 / Anthropic Official - Purple (官方内置)
+    "anthropic": "#8b5cf7",
+    "claude-official": "#8b5cf7",
+    "official": "#8b5cf7",
+
+    // Local - 灰色系 / Local - Gray (用户本地创建)
+    "local": "#6b7280",
+
+    // Happy Claude - 绿色系 / Happy Claude - Green
+    "happy claude": "#10b981",
+
+    // Superpowers - 蓝色系 / Superpowers - Blue
+    "superpowers": "#0078d4",
+
+    // Obsidian - 青色系 / Obsidian - Cyan
+    "obsidian": "#06b6d4",
+
+    // Community - 绿色系 / Community - Green
+    "community": "#10b981",
+
+    // Marketplace - 蓝色系 / Marketplace - Blue
+    "marketplace": "#0078d4",
+
+    // Custom - 橙色系 / Custom - Orange
+    "custom": "#f59e0b",
+    "user": "#f59e0b",
+
+    // Verified - 青色系 / Verified - Cyan
+    "verified": "#06b6d4",
+
+    // Featured - 粉色系 / Featured - Pink
+    "featured": "#ec4899",
+
+    // Default - 灰色系 / Default - Gray
+    "default": "#6b7280",
+  };
+
+  return marketplaceColors[normalized] || "#6b7280"; // 默认为本地灰色 / Default to local gray
+}
+
 interface SkillListProps {
   /** List of skills to display / 要显示的 Skill 列表 */
   skills: Skill[];
@@ -182,6 +233,8 @@ export function SkillList({ skills, selectedIndex, onSkillClick }: SkillListProp
       {skills.map((skill, index) => {
         // 获取 skill 对应的 Emoji / Get emoji for skill
         const emoji = getSkillEmoji(skill.name);
+        // 获取 marketplace 对应的颜色 / Get color for marketplace
+        const marketplaceColor = getMarketplaceColor(skill.marketplace);
 
         return (
           <div
@@ -203,8 +256,19 @@ export function SkillList({ skills, selectedIndex, onSkillClick }: SkillListProp
 
             {/* Skill 信息 / Skill info */}
             <div className="skill-item-content">
-              <div className="skill-item-name">
-                {skill.displayName || skill.name}
+              <div className="skill-item-header">
+                <div className="skill-item-name">
+                  {skill.displayName || skill.name}
+                </div>
+                {/* 显示 marketplace 来源 / Show marketplace source */}
+                {skill.marketplace && (
+                  <span
+                    className="skill-item-category"
+                    style={{ color: marketplaceColor }}
+                  >
+                    {skill.marketplace}
+                  </span>
+                )}
               </div>
               {skill.description && (
                 <div className="skill-item-description">{skill.description}</div>
