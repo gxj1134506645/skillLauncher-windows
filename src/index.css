@@ -75,21 +75,31 @@ html, body, #root {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
+}
+
+/* Emoji 图标特殊样式 / Emoji icon styles */
+.skill-item-icon.emoji-icon {
+  font-size: 20px; /* Emoji 大小 */
+  line-height: 1;
+}
+
+/* Lucide 图标样式（如果还需要使用）/ Lucide icon styles (if needed) */
+.skill-item-icon:not(.emoji-icon) {
   color: #0078d4; /* Windows 蓝色主题色 / Windows blue theme color */
 }
 
-.skill-item.selected .skill-item-icon {
+.skill-item.selected .skill-item-icon:not(.emoji-icon) {
   color: #005a9e; /* 选中时图标颜色更深 / Darker color when selected */
 }
 
-/* Lucide 图标样式 / Lucide icon styles */
+/* Lucide SVG 样式 / Lucide SVG styles */
 .lucide-icon {
   stroke-width: 1.5; /* 图标线条粗细 / Icon stroke width */
 }
 
-/* 确保 Lucide SVG 正确显示 / Ensure Lucide SVG displays correctly */
+/* 确保 SVG 正确显示 / Ensure SVG displays correctly */
 .skill-item-icon svg {
   width: 20px;
   height: 20px;
