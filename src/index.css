@@ -28,24 +28,29 @@ html, body, #root {
 .container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100vh; /* 使用视口高度 / Use viewport height */
+  max-height: 100vh; /* 限制最大高度 / Limit max height */
   padding: 16px;
   gap: 12px;
   position: relative; /* 为绝对定位的设置按钮提供定位上下文 */
+  overflow: hidden; /* 防止容器本身滚动 / Prevent container from scrolling */
 }
 
 /* Search input styles */
 .search-container {
-  flex-shrink: 0;
+  flex-shrink: 0; /* 防止搜索框被压缩 / Prevent search box from shrinking */
 }
 
 /* Skill list styles */
 .skill-list {
-  flex: 1;
-  overflow-y: auto;
+  flex: 1; /* 占据剩余空间 / Take remaining space */
+  min-height: 0; /* 重要：允许 flex 子元素缩小 / Important: allow flex child to shrink */
+  overflow-y: auto; /* 启用垂直滚动 / Enable vertical scrolling */
+  overflow-x: hidden; /* 隐藏水平滚动条 / Hide horizontal scrollbar */
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding-right: 4px; /* 为滚动条留出空间 / Leave space for scrollbar */
 }
 
 /* Skill item styles */
@@ -166,20 +171,44 @@ html, body, #root {
   height: 100%;
 }
 
-/* Scrollbar styles */
+/* Scrollbar styles - 滚动条样式 */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 12px; /* 增加滚动条宽度 / Increase scrollbar width */
+  height: 12px; /* 水平滚动条高度 / Horizontal scrollbar height */
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #f1f1f1; /* 浅灰色背景 / Light gray background */
+  border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #c0c0c0;
-  border-radius: 4px;
+  background-color: #a0a0a0; /* 更深的灰色 / Darker gray */
+  border-radius: 6px;
+  border: 2px solid #f1f1f1; /* 添加边框 / Add border */
 }
 
 ::-webkit-scrollbar-thumb:hover {
+  background-color: #707070; /* hover 时更深 / Darker on hover */
+  border: 2px solid #f1f1f1;
+}
+
+/* 确保滚动条始终可见 / Ensure scrollbar is always visible */
+.skill-list::-webkit-scrollbar {
+  width: 12px;
+}
+
+.skill-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 6px;
+}
+
+.skill-list::-webkit-scrollbar-thumb {
   background-color: #a0a0a0;
+  border-radius: 6px;
+  border: 2px solid #f1f1f1;
+}
+
+.skill-list::-webkit-scrollbar-thumb:hover {
+  background-color: #707070;
 }
