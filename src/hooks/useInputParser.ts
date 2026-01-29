@@ -79,11 +79,12 @@ export function useInputParser(skills: Skill[]) {
         return skills;
       }
 
+      // 只搜索 name 和 displayName，不搜索 description（避免噪音结果）
+      // Only search name and displayName, not description (to avoid noise)
       const filtered = skills.filter(
         (skill) =>
           skill.name.toLowerCase().includes(query) ||
-          skill.displayName?.toLowerCase().includes(query) ||
-          skill.description?.toLowerCase().includes(query)
+          skill.displayName?.toLowerCase().includes(query)
       );
 
       console.log("✅ 搜索结果 / Search results:", filtered.length, "skills");
