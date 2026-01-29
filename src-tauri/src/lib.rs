@@ -168,6 +168,13 @@ fn config_to_shortcut(config: &ShortcutConfig) -> tauri_plugin_global_shortcut::
     Shortcut::new(mods, code)
 }
 
+/// Health check command
+/// 健康检查命令
+#[tauri::command]
+fn health_check() -> String {
+    "ok".to_string()
+}
+
 /// Tauri command to update shortcut settings
 /// Tauri 命令：更新快捷键设置
 #[tauri::command]
@@ -247,7 +254,10 @@ pub fn run() {
         // 注册全局快捷键插件
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         // Register commands / 注册命令
-        .invoke_handler(tauri::generate_handler![update_shortcut])
+        .invoke_handler(tauri::generate_handler![
+            update_shortcut,
+            health_check
+        ])
         // Setup application
         // 设置应用
         .setup(move |app| {

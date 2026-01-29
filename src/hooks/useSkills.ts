@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import type { Skill, SkillConfig } from "../types/skill";
+import type { Skill } from "../types/skill";
+import { SkillScanner } from "../services/skillScanner";
 
 /**
  * Hook for loading and managing skills
@@ -11,56 +12,62 @@ export function useSkills() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const loadSkills = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // 等待 Tauri API 准备好 / Wait for Tauri API to be ready
+        let retries = 0;
+        const maxRetries = 50; // 增加到 5 秒 / Increase to 5 seconds
+
+        while (retries < maxRetries) {
+          try {
+            // 尝试调用 Tauri API / Try to call Tauri API
+            const { invoke } = await import("@tauri-apps/api/core");
+            await invoke("health_check");
+            break; // 成功则跳出 / Success, break
+          } catch (e) {
+            // 失败则继续等待 / Fail, continue waiting
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            retries++;
+          }
+        }
+
+        if (retries >= maxRetries) {
+          console.warn("Tauri API 超时，使用默认 skills / Tauri API timeout, using default skills");
+          setSkills(getDefaultSkills());
+          setLoading(false);
+          return;
+        }
+
+        // 使用 SkillScanner 扫描 skills 目录 / Use SkillScanner to scan skills directory
+        const scanner = new SkillScanner();
+        const scannedSkills = await scanner.scanSkills();
+
+        // 如果扫描成功且有结果，使用扫描的 skills / If scan succeeds and has results, use scanned skills
+        if (scannedSkills.length > 0) {
+          console.log(`✅ 成功加载 ${scannedSkills.length} 个 skills`);
+          setSkills(scannedSkills);
+        } else {
+          // 如果扫描结果为空，使用默认 skills / If scan result is empty, use default skills
+          console.warn("⚠️ 未找到 skills，使用默认 skills");
+          setSkills(getDefaultSkills());
+        }
+      } catch (err) {
+        console.error("❌ Failed to load skills:", err);
+        setError("加载 skills 失败");
+        // 使用默认 skills 作为回退 / Use default skills as fallback
+        setSkills(getDefaultSkills());
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadSkills();
   }, []);
 
-  /**
-   * Load skills from configuration file
-   * 从配置文件加载 Skills
-   */
-  async function loadSkills() {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Try to load skills from local config / 尝试从本地配置加载 Skills
-      const loadedSkills = await loadSkillsFromConfig();
-      setSkills(loadedSkills);
-    } catch (err) {
-      console.error("Failed to load skills:", err);
-      setError("Failed to load skills configuration");
-      // Use default skills as fallback / 使用默认 Skills 作为后备
-      setSkills(getDefaultSkills());
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return { skills, loading, error, reload: loadSkills };
-}
-
-/**
- * Load skills from YAML configuration file
- * 从 YAML 配置文件加载 Skills
- */
-async function loadSkillsFromConfig(): Promise<Skill[]> {
-  try {
-    // Import Tauri fs plugin / 导入 Tauri fs 插件
-    const { readTextFile, BaseDirectory } = await import("@tauri-apps/plugin-fs");
-    const yaml = await import("yaml");
-
-    // Read config file from app config directory / 从应用配置目录读取配置文件
-    const configContent = await readTextFile("skills.yaml", {
-      baseDir: BaseDirectory.AppConfig,
-    });
-
-    // Parse YAML content / 解析 YAML 内容
-    const config = yaml.parse(configContent) as SkillConfig;
-    return config.skills || [];
-  } catch (err) {
-    console.warn("Could not load skills.yaml, using defaults:", err);
-    return getDefaultSkills();
-  }
+  return { skills, loading, error, reload: () => {} };
 }
 
 /**

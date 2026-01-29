@@ -20,7 +20,9 @@
       "Bash(tasklist:*)",
       "Bash(findstr:*)",
       "mcp__zread__get_repo_structure",
-      "WebSearch"
+      "WebSearch",
+      "Bash(powershell -Command \"Stop-Process -Id 8196 -Force\")",
+      "Bash(timeout:*)"
     ]
   }
 }
