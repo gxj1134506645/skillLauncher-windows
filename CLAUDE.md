@@ -36,7 +36,7 @@ skillLauncher-windows/
 
 ## Key Features
 
-1. **Global Shortcut**: `Ctrl+Shift+Space` to toggle launcher window
+1. **Global Shortcut**: `Ctrl+Shift+P` to toggle launcher window
 2. **Keyboard Navigation**: Arrow keys to navigate, Enter to execute, Escape to hide
 3. **Search**: Real-time filtering of skills by name/description
 4. **Shell Execution**: Execute Claude Code commands via Tauri shell plugin

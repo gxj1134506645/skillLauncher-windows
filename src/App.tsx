@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { Input, Spinner, Text } from "@fluentui/react-components";
 import { Search24Regular } from "@fluentui/react-icons";
 import { SkillList } from "./components/SkillList";
+import { SettingsDialog } from "./components/SettingsDialog";
 import { useSkills } from "./hooks/useSkills";
 import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
+import { useSettings } from "./hooks/useSettings";
 import type { Skill } from "./types/skill";
 
 /**
@@ -16,6 +18,9 @@ function App() {
 
   // Load skills / 加载 Skills
   const { skills, loading, error } = useSkills();
+
+  // Load settings / 加载设置
+  const { settings, updateShortcut } = useSettings();
 
   // Filter skills based on search query / 根据搜索关键词过滤 Skills
   const filteredSkills = skills.filter((skill) => {
@@ -75,16 +80,20 @@ function App() {
 
   return (
     <div className="container">
-      {/* Search input / 搜索输入框 */}
-      <div className="search-container">
+      {/* Header with search and settings / 顶部栏：搜索和设置 */}
+      <div className="search-container" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
         <Input
           placeholder="Search skills..."
           value={searchQuery}
           onChange={(e, data) => setSearchQuery(data.value)}
           contentBefore={<Search24Regular />}
           appearance="outline"
-          style={{ width: "100%" }}
+          style={{ flex: 1 }}
           autoFocus
+        />
+        <SettingsDialog
+          shortcut={settings.shortcut}
+          onShortcutChange={updateShortcut}
         />
       </div>
 

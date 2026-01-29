@@ -31,6 +31,7 @@ html, body, #root {
   height: 100%;
   padding: 16px;
   gap: 12px;
+  position: relative; /* 为绝对定位的设置按钮提供定位上下文 */
 }
 
 /* Search input styles */
