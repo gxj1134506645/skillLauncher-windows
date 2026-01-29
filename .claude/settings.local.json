@@ -7,7 +7,13 @@
       "Bash(Select-Object FullName, Mode)",
       "Bash(npm install @fluentui/react-icons)",
       "Bash(npm install @tauri-apps/plugin-fs)",
-      "Bash(cmd.exe /c \"npm run tauri dev\")"
+      "Bash(cmd.exe /c \"npm run tauri dev\")",
+      "Bash(git add:*)",
+      "Bash(npm run tauri dev)",
+      "Bash(npx tauri icon --help:*)",
+      "Bash(npx tauri icon app-icon.svg)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)"
     ]
   }
 }

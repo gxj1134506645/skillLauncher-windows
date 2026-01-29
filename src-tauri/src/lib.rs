@@ -21,19 +21,21 @@ pub fn run() {
             // 获取主窗口
             let window = app.get_webview_window("main").unwrap();
 
-            // Register global shortcut (Ctrl+Shift+Space)
-            // 注册全局快捷键 (Ctrl+Shift+Space)
+            // Register global shortcut (Ctrl+Alt+Space)
+            // 注册全局快捷键 (Ctrl+Alt+Space)
             #[cfg(desktop)]
             {
                 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
 
+                // Primary shortcut: Ctrl+; (Semicolon)
+                // 主快捷键: Ctrl+; (分号)
                 let shortcut = Shortcut::new(
-                    Some(Modifiers::CONTROL | Modifiers::SHIFT),
-                    Code::Space,
+                    Some(Modifiers::CONTROL),
+                    Code::Semicolon,
                 );
 
                 let window_clone = window.clone();
-                app.global_shortcut().on_shortcut(shortcut, move |_app, _shortcut, _event| {
+                let handler = move |_app: &tauri::AppHandle, _shortcut: &Shortcut, _event: tauri_plugin_global_shortcut::ShortcutEvent| {
                     // Toggle window visibility
                     // 切换窗口可见性
                     if window_clone.is_visible().unwrap_or(false) {
@@ -42,11 +44,16 @@ pub fn run() {
                         let _ = window_clone.show();
                         let _ = window_clone.set_focus();
                     }
-                })?;
+                };
 
-                // Register the shortcut
-                // 注册快捷键
-                app.global_shortcut().register(shortcut)?;
+                // Try to register the shortcut, log warning if failed
+                // 尝试注册快捷键，失败时记录警告
+                if let Err(e) = app.global_shortcut().on_shortcut(shortcut, handler) {
+                    eprintln!("Warning: Failed to set shortcut handler: {}", e);
+                } else if let Err(e) = app.global_shortcut().register(shortcut) {
+                    eprintln!("Warning: Failed to register shortcut Ctrl+;: {}", e);
+                    eprintln!("The shortcut may be used by another application.");
+                }
             }
 
             Ok(())
