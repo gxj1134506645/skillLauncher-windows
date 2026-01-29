@@ -6,7 +6,8 @@ import { useState, useEffect, useCallback } from "react";
  */
 export function useKeyboardNavigation(
   itemCount: number,
-  onExecute: (index: number) => void
+  onExecute: (index: number) => void,
+  onTabComplete?: () => void // Tab 自动补全回调 / Tab auto-complete callback
 ) {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -22,6 +23,13 @@ export function useKeyboardNavigation(
           event.preventDefault();
           setSelectedIndex((prev) => (prev < itemCount - 1 ? prev + 1 : 0));
           break;
+        case "Tab":
+          // Tab 自动补全 / Tab auto-complete
+          event.preventDefault();
+          if (onTabComplete && itemCount > 0) {
+            onTabComplete();
+          }
+          break;
         case "Enter":
           event.preventDefault();
           if (itemCount > 0) {
@@ -35,7 +43,7 @@ export function useKeyboardNavigation(
           break;
       }
     },
-    [itemCount, selectedIndex, onExecute]
+    [itemCount, selectedIndex, onExecute, onTabComplete]
   );
 
   // Add keyboard event listener / 添加键盘事件监听器

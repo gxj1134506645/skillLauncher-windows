@@ -3,6 +3,10 @@ use std::fs;
 use std::path::PathBuf;
 use tauri::Manager;
 
+pub mod skills;
+
+pub use skills::*;
+
 /// Shortcut configuration from frontend
 /// 前端传来的快捷键配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -256,7 +260,8 @@ pub fn run() {
         // Register commands / 注册命令
         .invoke_handler(tauri::generate_handler![
             update_shortcut,
-            health_check
+            health_check,
+            skills::scan_skills_directory
         ])
         // Setup application
         // 设置应用

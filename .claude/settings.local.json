@@ -22,7 +22,9 @@
       "mcp__zread__get_repo_structure",
       "WebSearch",
       "Bash(powershell -Command \"Stop-Process -Id 8196 -Force\")",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(Start-Sleep -Seconds 15)",
+      "Bash(Get-Content \"C:\\\\Users\\\\admin\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\F--codes-skillLauncher-windows\\\\tasks\\\\b92a230.output\" -Tail 30)"
     ]
   }
 }
