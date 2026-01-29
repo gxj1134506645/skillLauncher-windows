@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Input, Spinner, Text } from "@fluentui/react-components";
-import { Search24Regular } from "@fluentui/react-icons";
+import { Input, Spinner, Text, Button } from "@fluentui/react-components";
+import { Search24Regular, Dismiss24Regular } from "@fluentui/react-icons";
 import { SkillList } from "./components/SkillList";
 import { SettingsDialog } from "./components/SettingsDialog";
 import { useSkills } from "./hooks/useSkills";
@@ -176,6 +176,17 @@ function App() {
           value={rawInput}
           onChange={(e, data) => setRawInput(data.value)}
           contentBefore={<Search24Regular />}
+          contentAfter={
+            rawInput ? (
+              <Button
+                appearance="subtle"
+                icon={<Dismiss24Regular />}
+                onClick={() => clearInput()}
+                size="small"
+                style={{ minWidth: "24px", padding: "0 4px" }}
+              />
+            ) : undefined
+          }
           appearance="outline"
           style={{ flex: 1 }}
           autoFocus

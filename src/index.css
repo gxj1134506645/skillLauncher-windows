@@ -55,6 +55,9 @@ html, body, #root {
   cursor: pointer;
   transition: background-color 0.15s ease;
   border: 1px solid #e0e0e0;
+  display: flex; /* 使用 flexbox 布局以显示图标和内容 */
+  align-items: center; /* 垂直居中 */
+  gap: 12px; /* 图标和内容之间的间距 */
 }
 
 .skill-item:hover {
@@ -66,16 +69,55 @@ html, body, #root {
   border-color: #0078d4;
 }
 
+/* Skill 图标样式 / Skill icon styles */
+.skill-item-icon {
+  flex-shrink: 0; /* 防止图标被压缩 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: #0078d4; /* Windows 蓝色主题色 / Windows blue theme color */
+}
+
+.skill-item.selected .skill-item-icon {
+  color: #005a9e; /* 选中时图标颜色更深 / Darker color when selected */
+}
+
+/* Lucide 图标样式 / Lucide icon styles */
+.lucide-icon {
+  stroke-width: 1.5; /* 图标线条粗细 / Icon stroke width */
+}
+
+/* 确保 Lucide SVG 正确显示 / Ensure Lucide SVG displays correctly */
+.skill-item-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+/* Skill 内容容器 / Skill content container */
+.skill-item-content {
+  flex: 1; /* 占据剩余空间 */
+  min-width: 0; /* 允许文本截断 */
+}
+
 .skill-item-name {
   font-weight: 600;
   font-size: 14px;
   color: #242424;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .skill-item-description {
   font-size: 12px;
   color: #616161;
   margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Empty state */
