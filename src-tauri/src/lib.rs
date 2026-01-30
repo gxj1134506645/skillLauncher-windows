@@ -7,6 +7,95 @@ pub mod skills;
 
 pub use skills::*;
 
+/// Setup Claude Code skill on first run
+/// 首次运行时配置 Claude Code skill
+fn setup_claude_skill() -> Result<(), String> {
+    use tauri_plugin_fs::Fs;
+
+    println!("🔧 Checking Claude Code skill configuration...");
+
+    // Get Claude skills directory
+    // 获取 Claude skills 目录
+    let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
+    let skills_dir = home.join(".claude").join("skills");
+    let skill_dir = skills_dir.join("skill-launcher");
+
+    // Create directories if they don't exist
+    // 如果目录不存在则创建
+    fs::create_dir_all(&skill_dir).map_err(|e| format!("Failed to create skill directory: {}", e))?;
+
+    // Check if already configured
+    // 检查是否已配置
+    let skill_md = skill_dir.join("skill.md");
+    if skill_md.exists() {
+        println!("✅ Claude Code skill already configured");
+        return Ok(());
+    }
+
+    println!("📝 Installing Claude Code skill...");
+
+    // Create skill.md
+    // 创建 skill.md
+    let skill_content = r#"---
+command: "cmd.exe /c launch.bat"
+---
+
+# Skill Launcher for Windows
+
+When this skill is invoked, execute the command to open the Skill Launcher window.
+
+The Skill Launcher window will open, displaying all available Claude Code skills for quick selection.
+"#;
+
+    fs::write(&skill_md, skill_content).map_err(|e| format!("Failed to write skill.md: {}", e))?;
+
+    // Create launch.bat with auto-detection
+    // 创建具有自动检测功能的 launch.bat
+    let launch_bat = skill_dir.join("launch.bat");
+    let launch_content = r#"@echo off
+REM Auto-find and launch Skill Launcher
+REM Auto-find et lancer Skill Launcher
+
+set "EXE_PATH="
+
+if exist "%LOCALAPPDATA%\Programs\skill-launcher\skill-launcher.exe" (
+    set "EXE_PATH=%LOCALAPPDATA%\Programs\skill-launcher\skill-launcher.exe"
+    goto :launch
+)
+
+if exist "%LOCALAPPDATA%\Skill Launcher\skill-launcher.exe" (
+    set "EXE_PATH=%LOCALAPPDATA%\Skill Launcher\skill-launcher.exe"
+    goto :launch
+)
+
+if exist "%PROGRAMFILES%\Skill Launcher\skill-launcher.exe" (
+    set "EXE_PATH=%PROGRAMFILES%\Skill Launcher\skill-launcher.exe"
+    goto :launch
+)
+
+if exist "%USERPROFILE%\skillLauncher-windows\src-tauri\target\release\skill-launcher.exe" (
+    set "EXE_PATH=%USERPROFILE%\skillLauncher-windows\src-tauri\target\release\skill-launcher.exe"
+    goto :launch
+)
+
+echo Error: Skill Launcher not found!
+timeout /t 3
+exit /b 1
+
+:launch
+start "" "%EXE_PATH%"
+exit /b 0
+"#;
+
+    fs::write(&launch_bat, launch_content).map_err(|e| format!("Failed to write launch.bat: {}", e))?;
+
+    println!("✅ Claude Code skill configured successfully!");
+    println!("📍 Location: {}", skill_dir.display());
+    println!("ℹ️  Restart Claude Code CLI to use /skill-launcher command");
+
+    Ok(())
+}
+
 /// Shortcut configuration from frontend
 /// 前端传来的快捷键配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -311,6 +400,12 @@ pub fn run() {
             // Get main window
             // 获取主窗口
             let window = app.get_webview_window("main").unwrap();
+
+            // Auto-configure Claude Code skill on first run
+            // 首次运行时自动配置 Claude Code skill
+            if let Err(e) = setup_claude_skill() {
+                eprintln!("⚠️ Warning: Failed to setup Claude Code skill: {}", e);
+            }
 
             // Register global shortcut from settings
             // 从设置中注册全局快捷键

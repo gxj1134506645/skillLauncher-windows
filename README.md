@@ -2,88 +2,70 @@
 
 Windows 版 Claude Code Skills 快速启动器，灵感来自 [SkillLauncher (macOS)](https://github.com/Ceeon/SkillLauncher)。
 
-[![Download](https://img.shields.io/badge/Download-Latest-blue)](https://github.com/yourusername/skillLauncher-windows/releases/latest) ![Skill Launcher](https://img.shields.io/badge/Platform-Windows-blue) ![Tauri](https://img.shields.io/badge/Tauri-2.0-orange) ![License](https://img.shields.io/badge/License-MIT-green)
+[![Download](https://img.shields.io/badge/Download-Latest-blue)](https://github.com/gxj1134506645/skillLauncher-windows/releases/latest) ![Skill Launcher](https://img.shields.io/badge/Platform-Windows-blue) ![Tauri](https://img.shields.io/badge/Tauri-2.0-orange) ![License](https://img.shields.io/badge/License-MIT-green)
 
-## 功能特性
+## 🚀 超简单安装（3 步完成）
+
+### 1️⃣ 下载
+前往 [Releases 页面](https://github.com/gxj1134506645/skillLauncher-windows/releases/latest) 下载：
+```
+Skill Launcher_1.0.0_x64-setup.exe
+```
+
+### 2️⃣ 安装
+双击 `setup.exe`，点击"下一步"直到安装完成。
+
+**应用会在首次启动时自动配置 Claude Code skill！** ✨
+
+### 3️⃣ 使用
+完全退出 **Claude Code**，重新打开，输入：
+```
+/skill-launcher
+```
+
+---
+
+## ✨ 功能特性
 
 - **全局快捷键** - `Ctrl+Shift+P` 随时唤起，不打断工作流
-- **智能搜索** - 输入几个字母，模糊匹配 Skill
-- **自动读取** - 扫描 `~/.claude/skills/` 目录下所有 Skill
-- **键盘导航** - 方向键选择，回车执行，Escape 隐藏
-- **实时输出** - 执行结果实时显示
+- **智能搜索** - 输入关键词，模糊匹配 skills
+- **智能排序** - 常用的 skills 自动排在前面
+- **键盘导航** - `↑↓` 选择，`Enter` 执行，`Esc` 隐藏
+- **自动配置** - 首次启动自动配置 Claude Code skill
+- **使用记录** - 记录使用频率，智能排序
 
-## 安装方法
+---
 
-### 🚀 方法一：直接下载安装（推荐给新用户）
+## 🎯 使用方法
 
-1. 前往 [Releases 页面](https://github.com/yourusername/skillLauncher-windows/releases/latest)
-2. 下载 `Skill Launcher_1.0.0_x64-setup.exe`
-3. 双击运行，按提示完成安装
-4. 首次运行需要管理员权限（注册全局快捷键）
+### 启动方式
 
-### 📦 方法二：通过 Claude Code 安装（推荐给开发者）
-
-1. 新建一个文件夹，打开 Claude Code
-2. 复制以下内容给 Claude：
-
+**方式 1：Claude Code CLI（推荐）**
 ```
-帮我安装 SkillLauncher Windows 版。
-
-地址：https://github.com/gxj1134506645/skillLauncher-windows
-
-要求：
-1. clone 到当前目录
-2. 安装依赖：npm install
-3. 编译：npm run tauri build
-4. 把 skillLauncher-windows/skills 里的内容复制到 ~/.claude/skills/
+/skill-launcher
 ```
 
-3. Claude 会帮你完成安装
+**方式 2：全局快捷键**
+按 `Ctrl+Shift+P`
 
-### 方法二：手动安装
+**方式 3：桌面快捷方式**
+双击桌面图标
 
-```powershell
-# 1. 克隆仓库
-git clone https://github.com/gxj1134506645/skillLauncher-windows.git
-cd skillLauncher-windows
+---
 
-# 2. 安装依赖
-npm install
+## 🎮 快捷键
 
-# 3. 编译
-npm run tauri build
+| 快捷键 | 功能 |
+|--------|------|
+| `Ctrl+Shift+P` | 打开/关闭启动器 |
+| `↑` / `↓` | 上下选择 |
+| `Enter` | 发送到 Claude Code CLI |
+| `Esc` | 关闭窗口 |
+| `Tab` | 自动补全 skill 名称 |
 
-# 4. 复制 skills 到 Claude 目录
-Copy-Item -Path ".\skills\*" -Destination "$env:USERPROFILE\.claude\skills\" -Recurse
-```
+---
 
-编译完成后，可执行文件位于 `src-tauri/target/release/skill-launcher.exe`
-
-## 使用方法
-
-### 首次运行
-
-退出 Claude Code，重新打开，输入 `/skill-launcher`
-
-### 日常使用
-
-- `Ctrl+Shift+P` 唤起窗口
-- 输入 skill 名字（支持模糊搜索）
-- 支持三种模式：
-  - **搜索模式**: `commit` - 搜索包含 "commit" 的 skills
-  - **直接模式**: `/commit` - 直接执行 commit skill
-  - **任务模式**: `/commit fix bug` - 执行 skill 并传递任务
-- 回车执行
-- `Escape` 隐藏窗口
-
-### 智能排序
-
-应用会自动记录你的使用习惯：
-- 最近使用的 skills 自动排前面
-- 使用次数多的优先显示
-- 数据保存在 `%APPDATA%\com.skillLauncher.app\skill-usage.json`
-
-## 开发
+## 🛠️ 开发
 
 ```powershell
 # 安装依赖
@@ -96,37 +78,12 @@ npm run tauri dev
 npm run tauri build
 ```
 
-## 技术栈
+## 📦 技术栈
 
 - **前端**: React 18 + TypeScript + Fluent UI
 - **后端**: Tauri 2.0 (Rust)
 - **构建**: Vite
 
-## 项目结构
+---
 
-```
-skillLauncher-windows/
-├── src/                     # React 前端源码
-│   ├── components/          # UI 组件
-│   ├── hooks/               # React Hooks
-│   ├── types/               # TypeScript 类型
-│   └── App.tsx              # 主组件
-├── src-tauri/               # Tauri 后端 (Rust)
-│   ├── src/                 # Rust 源码
-│   └── tauri.conf.json      # Tauri 配置
-├── skills/                  # Claude Code Skills
-│   └── skill-launcher/      # 启动器 Skill
-│       └── skill.md         # Skill 定义文件
-├── launch.bat               # 启动脚本
-├── INSTALL.md               # 详细安装指南
-└── package.json
-```
-
-## 相关项目
-
-- [SkillLauncher (macOS)](https://github.com/Ceeon/SkillLauncher) - 原版 macOS 启动器
-- [Claude Code](https://claude.ai/code) - Anthropic 官方 CLI
-
-## License
-
-MIT
+欢迎关注公众号 **FishTech Notes**，一块交流使用心得
