@@ -5,6 +5,7 @@ use std::path::PathBuf;
 /// Plugin marketplace configuration
 /// Plugin marketplace 配置
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)] // 预留功能 / Reserved for future use
 struct MarketplaceConfig {
     #[serde(default)]
     source: Option<SourceInfo>,
@@ -16,6 +17,7 @@ struct MarketplaceConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)] // 预留功能 / Reserved for future use
 struct SourceInfo {
     source: String,
     repo: String,
@@ -76,6 +78,7 @@ fn get_plugins_dir() -> PathBuf {
 
 /// Read marketplace configuration
 /// 读取 marketplace 配置
+#[allow(dead_code)] // 预留功能 / Reserved for future use
 fn read_marketplaces_config() -> std::collections::HashMap<String, MarketplaceConfig> {
     let plugins_dir = get_plugins_dir();
     let config_path = plugins_dir.join("known_marketplaces.json");

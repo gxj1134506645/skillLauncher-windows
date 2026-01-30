@@ -21,8 +21,12 @@ export interface ParsedInput {
  * Input parser hook - supports search, direct, and task modes
  *
  * @param skills - 可用的 skills 列表 / Available skills list
+ * @param onSkillExecuted - Skill 执行后的回调函数 / Callback after skill execution
  */
-export function useInputParser(skills: Skill[]) {
+export function useInputParser(
+  skills: Skill[],
+  onSkillExecuted?: (skillName: string) => void
+) {
   // 原始输入 / Raw input
   const [rawInput, setRawInput] = useState("");
 
@@ -130,33 +134,46 @@ export function useInputParser(skills: Skill[]) {
       const skillName = skill.name.startsWith("/") ? skill.name.slice(1) : skill.name;
       const task = parsedInput?.mode === "task" ? parsedInput.task : undefined;
 
-      // TODO: 在 Phase 3 中实现实际的 CLI 调用
-      // TODO: Implement actual CLI invocation in Phase 3
-      console.log(`执行 skill / Execute skill: ${skillName}`, task ? `任务 / Task: ${task}` : "");
+      console.log(`发送 skill 到 CLI / Send skill to CLI: /${skillName}`, task ? `任务 / Task: ${task}` : "");
 
-      // 临时：直接执行命令 / Temporary: execute command directly
-      if (skill.command) {
+      try {
+        // 构建完整命令 / Build full command
+        let fullCommand = `/${skillName}`;
+        if (task) {
+          fullCommand = `/${skillName} ${task}`;
+        }
+
+        // 导入 Tauri API / Import Tauri API
+        const { invoke } = await import("@tauri-apps/api/core");
+
+        // 发送命令到 Claude Code CLI / Send command to Claude Code CLI
+        await invoke("send_to_claude_cli", { command: fullCommand });
+
+        console.log(`✅ Skill ${skillName} 已发送到 CLI`);
+
+        // 记录使用情况 / Record usage
+        onSkillExecuted?.(skillName);
+      } catch (err) {
+        console.error(`❌ 发送 skill ${skillName} 失败 / Failed to send skill:`, err);
+        // 如果新命令失败，回退到旧的执行方式
+        // If new command fails, fallback to old execution method
+        console.log("尝试回退到直接执行模式 / Try fallback to direct execution");
         try {
           const { Command } = await import("@tauri-apps/plugin-shell");
-
-          // 如果有任务，构建完整命令 / If task exists, build full command
-          let commandStr = skill.command;
+          let commandStr = skill.command || `claude /${skillName}`;
           if (task) {
-            // 将任务附加到命令后 / Append task to command
-            commandStr = `${skill.command} "${task}"`;
+            commandStr = `${skill.command || `claude /${skillName}`} "${task}"`;
           }
-
-          // 执行命令 / Execute command
           const command = Command.create("cmd", ["/c", commandStr]);
           await command.execute();
-
-          console.log(`✅ Skill ${skillName} 执行成功 / executed successfully`);
-        } catch (err) {
-          console.error(`❌ 执行 skill ${skillName} 失败 / Failed to execute skill:`, err);
+          console.log(`✅ Skill ${skillName} 直接执行成功`);
+          onSkillExecuted?.(skillName);
+        } catch (fallbackErr) {
+          console.error(`❌ 回退执行也失败 / Fallback execution also failed:`, fallbackErr);
         }
       }
     },
-    [filteredSkills, parsedInput]
+    [filteredSkills, parsedInput, onSkillExecuted]
   );
 
   /**

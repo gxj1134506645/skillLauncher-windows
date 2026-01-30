@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { Input, Spinner, Text, Button } from "@fluentui/react-components";
 import { Search24Regular, Dismiss24Regular } from "@fluentui/react-icons";
 import { SkillList } from "./components/SkillList";
@@ -7,6 +7,7 @@ import { useSkills } from "./hooks/useSkills";
 import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
 import { useInputParser } from "./hooks/useInputParser";
 import { useSettings } from "./hooks/useSettings";
+import { useSkillUsage } from "./hooks/useSkillUsage";
 import type { Skill } from "./types/skill";
 
 /**
@@ -20,16 +21,20 @@ function App() {
   // Load settings / 加载设置
   const { settings, updateShortcut } = useSettings();
 
+  // Load skill usage / 加载 Skill 使用记录
+  const { recordUsage, getSortedSkills } = useSkillUsage();
+
+  // 应用使用记录排序 / Apply usage-based sorting
+  const sortedSkills = useMemo(() => getSortedSkills(skills), [skills, getSortedSkills]);
+
   // Input parser / 输入解析器
   const {
     rawInput,
     setRawInput,
     parsedInput,
     filteredSkills,
-    selectedSkill,
-    executeSkill,
     clearInput,
-  } = useInputParser(skills);
+  } = useInputParser(sortedSkills, recordUsage);
 
   // Tab 自动补全功能 / Tab auto-complete feature
   // 注意：必须在 useKeyboardNavigation 之前定义 / Must be defined before useKeyboardNavigation
@@ -142,7 +147,7 @@ function App() {
   }
 
   // Handle skill click / 处理 Skill 点击
-  const handleSkillClick = useCallback((skill: Skill, index: number) => {
+  const handleSkillClick = useCallback((_skill: Skill, index: number) => {
     setSelectedIndex(index);
     handleExecuteSkill(index);
   }, [setSelectedIndex, handleExecuteSkill]);
@@ -174,7 +179,7 @@ function App() {
         <Input
           placeholder={getInputPlaceholder()}
           value={rawInput}
-          onChange={(e, data) => setRawInput(data.value)}
+          onChange={(_e, data) => setRawInput(data.value)}
           contentBefore={<Search24Regular />}
           contentAfter={
             rawInput ? (

@@ -3,58 +3,39 @@ import {
   Code24Regular,
   BracesVariable24Regular,
   Document24Regular,
-  FileJs24Regular,
-  FileTs24Regular,
-  FilePython24Regular,
-  FileHtml24Regular,
-  FileCss24Regular,
 
   // Git 相关 / Git related
   BranchFork24Regular,
-  GitPullRequest24Regular,
-  SourceCommit24Regular,
 
   // 工具相关 / Tools related
   Wrench24Regular,
   Settings24Regular,
-  Toolbox24Regular,
 
   // 测试相关 / Testing related
   Bug24Regular,
-  TestBeaker24Regular,
-  ClipboardCheck24Regular,
+  Beaker24Regular,
 
   // 文档相关 / Documentation related
   Book24Regular,
   DocumentText24Regular,
-  Read24Regular,
 
   // 数据库相关 / Database related
   Database24Regular,
   Table24Regular,
 
   // 构建相关 / Build related
-  Build24Regular,
-  Package24Regular,
+  Building24Regular,
+  Box24Regular,
 
   // AI/智能相关 / AI related
   Sparkle24Regular,
   Brain24Regular,
 
   // 通用图标 / General icons
-  App24Regular,
-  Lightbulb24Regular,
+  Apps24Regular,
   Rocket24Regular,
-  Star24Regular,
-  Checkmark24Regular,
-  ArrowDownload24Regular,
-  ArrowUpload24Regular,
   Image24Regular,
   Video24Regular,
-  Chat24Regular,
-  Mail24Regular,
-  Folder24Regular,
-  ZipFolder24Regular,
 } from "@fluentui/react-icons";
 
 /**
@@ -68,11 +49,11 @@ export type SkillIconComponent = React.FC<React.SVGProps<SVGSVGElement>>;
  */
 const SKILL_ICON_MAP: Record<string, SkillIconComponent> = {
   // Git 相关 / Git related
-  "commit": SourceCommit24Regular,
-  "git-commit": SourceCommit24Regular,
-  "review-pr": GitPullRequest24Regular,
-  "pr": GitPullRequest24Regular,
-  "git-pr": GitPullRequest24Regular,
+  "commit": BranchFork24Regular,
+  "git-commit": BranchFork24Regular,
+  "review-pr": BranchFork24Regular,
+  "pr": BranchFork24Regular,
+  "git-pr": BranchFork24Regular,
   "branch": BranchFork24Regular,
 
   // 代码相关 / Code related
@@ -83,7 +64,7 @@ const SKILL_ICON_MAP: Record<string, SkillIconComponent> = {
   "lint": Document24Regular,
 
   // 测试相关 / Testing related
-  "test": TestBeaker24Regular,
+  "test": Beaker24Regular,
   "fix": Bug24Regular,
   "debug": Bug24Regular,
 
@@ -93,10 +74,10 @@ const SKILL_ICON_MAP: Record<string, SkillIconComponent> = {
   "markdown": DocumentText24Regular,
 
   // 构建相关 / Build related
-  "build": Build24Regular,
+  "build": Building24Regular,
   "deploy": Rocket24Regular,
-  "install": Package24Regular,
-  "package": Package24Regular,
+  "install": Box24Regular,
+  "package": Box24Regular,
 
   // 文件处理 / File processing
   "pdf": Document24Regular,
@@ -124,7 +105,7 @@ const SKILL_ICON_MAP: Record<string, SkillIconComponent> = {
  * 默认图标（当没有匹配时使用）
  * Default icon (used when no match found)
  */
-const DEFAULT_ICON: SkillIconComponent = App24Regular;
+const DEFAULT_ICON: SkillIconComponent = Apps24Regular;
 
 /**
  * 根据 skill name 获取对应的图标组件
@@ -154,12 +135,12 @@ export function getSkillIcon(skillName: string): SkillIconComponent {
   }
 
   // 根据关键词匹配 / Keyword matching
-  if (normalized.includes("git")) return SourceCommit24Regular;
-  if (normalized.includes("test")) return TestBeaker24Regular;
+  if (normalized.includes("git")) return BranchFork24Regular;
+  if (normalized.includes("test")) return Beaker24Regular;
   if (normalized.includes("bug") || normalized.includes("fix")) return Bug24Regular;
   if (normalized.includes("code") || normalized.includes("dev")) return Code24Regular;
   if (normalized.includes("doc") || normalized.includes("read")) return DocumentText24Regular;
-  if (normalized.includes("build") || normalized.includes("compile")) return Build24Regular;
+  if (normalized.includes("build") || normalized.includes("compile")) return Building24Regular;
   if (normalized.includes("deploy") || normalized.includes("ship")) return Rocket24Regular;
   if (normalized.includes("ai") || normalized.includes("smart")) return Sparkle24Regular;
   if (normalized.includes("setting") || normalized.includes("config")) return Settings24Regular;
@@ -183,11 +164,11 @@ export function getCategoryIcon(category?: string): SkillIconComponent {
 
   switch (normalized) {
     case "git":
-      return SourceCommit24Regular;
+      return BranchFork24Regular;
     case "code":
       return Code24Regular;
     case "testing":
-      return TestBeaker24Regular;
+      return Beaker24Regular;
     case "debugging":
       return Bug24Regular;
     case "documentation":
@@ -195,7 +176,7 @@ export function getCategoryIcon(category?: string): SkillIconComponent {
     case "database":
       return Database24Regular;
     case "build":
-      return Build24Regular;
+      return Building24Regular;
     case "ai":
       return Brain24Regular;
     case "tools":

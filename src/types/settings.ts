@@ -27,9 +27,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   shortcut: {
     ctrl: true,
     alt: false,
-    shift: false,
+    shift: true,
     win: false,
-    key: "Space",
+    key: "KeyP",
   },
   theme: "system",
 };

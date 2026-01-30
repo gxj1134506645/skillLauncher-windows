@@ -179,6 +179,47 @@ fn health_check() -> String {
     "ok".to_string()
 }
 
+/// Send command to Claude Code CLI window
+/// 发送命令到 Claude Code CLI 窗口
+#[tauri::command]
+async fn send_to_claude_cli(command: String) -> Result<(), String> {
+    use std::process::Command;
+
+    println!("正在发送命令到 Claude Code CLI: {}", command);
+
+    // 使用 PowerShell 将命令发送到活动窗口
+    // Use PowerShell to send command to active window
+    let script = format!(
+        r#"
+# 设置剪贴板 / Set clipboard
+Set-Clipboard -Value "{}"
+
+# 等待一小段时间 / Wait a bit
+Start-Sleep -Milliseconds 100
+
+# 发送 Ctrl+V 粘贴 / Send Ctrl+V to paste
+$wshell = New-Object -ComObject WScript.Shell
+$wshell.SendKeys("^(v)")
+
+Write-Output "命令已发送: {}"
+"#,
+        command, command
+    );
+
+    let output = Command::new("powershell")
+        .args(["-NoProfile", "-Command", &script])
+        .output()
+        .map_err(|e| format!("执行 PowerShell 失败: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("PowerShell 错误: {}", stderr));
+    }
+
+    println!("✅ 命令已成功发送");
+    Ok(())
+}
+
 /// Tauri command to update shortcut settings
 /// Tauri 命令：更新快捷键设置
 #[tauri::command]
@@ -261,7 +302,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             update_shortcut,
             health_check,
-            skills::scan_skills_directory
+            skills::scan_skills_directory,
+            send_to_claude_cli
         ])
         // Setup application
         // 设置应用

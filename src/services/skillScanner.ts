@@ -30,7 +30,7 @@ export class SkillScanner {
         displayName: fs.display_name,
         description: fs.description,
         category: fs.category,
-        marketplace: fs.marketplace, // 映射 marketplace 字段
+        marketplace: undefined, // Rust 后端暂不支持 marketplace 字段
         path: fs.path,
         command: fs.command,
       }));
