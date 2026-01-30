@@ -26,7 +26,7 @@ fn setup_claude_skill() -> Result<(), String> {
 
     // Check if already configured
     // 检查是否已配置
-    let skill_md = skill_dir.join("skill.md");
+    let skill_md = skill_dir.join("SKILL.md");
     if skill_md.exists() {
         println!("✅ Claude Code skill already configured");
         return Ok(());
@@ -34,17 +34,54 @@ fn setup_claude_skill() -> Result<(), String> {
 
     println!("📝 Installing Claude Code skill...");
 
-    // Create skill.md
-    // 创建 skill.md
+    // Create SKILL.md content
+    // 创建 SKILL.md 内容
     let skill_content = r#"---
-command: "cmd.exe /c launch.bat"
+name: skill-launcher
+description: Launch the interactive skill selector in the terminal. Shows all available Claude Code skills for quick selection.
 ---
 
 # Skill Launcher for Windows
 
-When this skill is invoked, execute the command to open the Skill Launcher window.
+When this skill is invoked, display all available skills in an interactive grid view for user selection.
 
-The Skill Launcher window will open, displaying all available Claude Code skills for quick selection.
+## Execution Instructions
+
+Execute the following PowerShell command:
+
+```powershell
+$skills = @(
+    @{Name="commit"; Description="Create well-formatted commits with conventional commit messages"},
+    @{Name="review-pr"; Description="Review and provide feedback on pull requests"},
+    @{Name="explain"; Description="Explain code or technical concepts"},
+    @{Name="refactor"; Description="Refactor code for better structure"},
+    @{Name="test"; Description="Generate or run tests"},
+    @{Name="doc"; Description="Generate documentation"},
+    @{Name="fix"; Description="Fix bugs or errors"},
+    @{Name="book-cover-generator"; Description="AI生成图书/电影等文学作品海报封面"},
+    @{Name="browser"; Description="Browser automation using Chrome DevTools Protocol"},
+    @{Name="canvas-design"; Description="Create visual art and designs"},
+    @{Name="docx"; Description="Comprehensive Word document creation and editing"},
+    @{Name="docx-format-replicator"; Description="Extract and replicate Word document formatting"},
+    @{Name="markdown-helper"; Description="Markdown document writing assistance"},
+    @{Name="obsidian-markdown"; Description="Create and edit Obsidian Flavored Markdown"},
+    @{Name="pdf"; Description="Comprehensive PDF manipulation toolkit"},
+    @{Name="report-generator"; Description="生成周报"},
+    @{Name="skill-creator"; Description="Guide for creating effective skills"},
+    @{Name="video-processor"; Description="Download and process videos from YouTube and other platforms"},
+    @{Name="wechat-article-writer"; Description="公众号文章自动化写作流程"},
+    @{Name="xlsx"; Description="Comprehensive spreadsheet creation and editing"}
+)
+$selected = $skills | Out-GridView -Title "Select a Skill" -OutputMode Single
+if ($selected) {
+    Write-Host "/$($selected.Name)"
+}
+```
+
+This will open an interactive grid view where users can:
+- Browse all available skills
+- Click to select a skill
+- The selected skill command will be output to the terminal
 "#;
 
     fs::write(&skill_md, skill_content).map_err(|e| format!("Failed to write skill.md: {}", e))?;
@@ -276,21 +313,61 @@ async fn send_to_claude_cli(command: String) -> Result<(), String> {
 
     println!("正在发送命令到 Claude Code CLI: {}", command);
 
-    // 使用 PowerShell 将命令发送到活动窗口
-    // Use PowerShell to send command to active window
+    // 使用 PowerShell 将命令发送到终端窗口
+    // 使用 Add-Type 引入 Windows API 来激活特定窗口
+    // Use PowerShell with Windows API to activate specific window
     let script = format!(
         r#"
+Add-Type @"
+  using System;
+  using System.Runtime.InteropServices;
+  public class Win32 {{
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+  }}
+"@
+
 # 设置剪贴板 / Set clipboard
 Set-Clipboard -Value "{}"
 
-# 等待一小段时间 / Wait a bit
-Start-Sleep -Milliseconds 100
+# 等待剪贴板设置完成 / Wait for clipboard
+Start-Sleep -Milliseconds 300
 
-# 发送 Ctrl+V 粘贴 / Send Ctrl+V to paste
+# 尝试找到并激活 Windows Terminal 或 PowerShell 窗口
+# Try to find and activate Windows Terminal or PowerShell window
+$processes = Get-Process | Where-Object {{
+    $_.MainWindowTitle -ne "" -and `
+    ($_.ProcessName -match "WindowsTerminal" -or `
+     $_.ProcessName -match "pwsh" -or `
+     $_.ProcessName -match "powershell" -or `
+     $_.ProcessName -match "Code")
+}}
+
+$found = $false
+foreach ($proc in $processes) {{
+    if ($proc.MainWindowTitle -ne "") {{
+        Write-Host "Found window: $($proc.ProcessName) - $($proc.MainWindowTitle)"
+        [Win32]::SetForegroundWindow($proc.MainWindowHandle) | Out-Null
+        Start-Sleep -Milliseconds 200
+        $found = $true
+        break
+    }}
+}}
+
+if (-not $found) {{
+    Write-Host "No terminal window found, trying Alt+Tab"
+    $wshell = New-Object -ComObject WScript.Shell
+    $wshell.SendKeys("%(+{{TAB}})")
+    Start-Sleep -Milliseconds 200
+}}
+
+# 发送 Ctrl+V 粘贴命令 / Send Ctrl+V to paste command
 $wshell = New-Object -ComObject WScript.Shell
 $wshell.SendKeys("^(v)")
 
-Write-Output "命令已发送: {}"
+Write-Host "Command sent: {}"
 "#,
         command, command
     );
@@ -305,7 +382,8 @@ Write-Output "命令已发送: {}"
         return Err(format!("PowerShell 错误: {}", stderr));
     }
 
-    println!("✅ 命令已成功发送");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    println!("✅ 命令已发送: {}", stdout);
     Ok(())
 }
 

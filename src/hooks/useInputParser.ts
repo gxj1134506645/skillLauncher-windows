@@ -136,42 +136,22 @@ export function useInputParser(
 
       console.log(`发送 skill 到 CLI / Send skill to CLI: /${skillName}`, task ? `任务 / Task: ${task}` : "");
 
-      try {
-        // 构建完整命令 / Build full command
-        let fullCommand = `/${skillName}`;
-        if (task) {
-          fullCommand = `/${skillName} ${task}`;
-        }
-
-        // 导入 Tauri API / Import Tauri API
-        const { invoke } = await import("@tauri-apps/api/core");
-
-        // 发送命令到 Claude Code CLI / Send command to Claude Code CLI
-        await invoke("send_to_claude_cli", { command: fullCommand });
-
-        console.log(`✅ Skill ${skillName} 已发送到 CLI`);
-
-        // 记录使用情况 / Record usage
-        onSkillExecuted?.(skillName);
-      } catch (err) {
-        console.error(`❌ 发送 skill ${skillName} 失败 / Failed to send skill:`, err);
-        // 如果新命令失败，回退到旧的执行方式
-        // If new command fails, fallback to old execution method
-        console.log("尝试回退到直接执行模式 / Try fallback to direct execution");
-        try {
-          const { Command } = await import("@tauri-apps/plugin-shell");
-          let commandStr = skill.command || `claude /${skillName}`;
-          if (task) {
-            commandStr = `${skill.command || `claude /${skillName}`} "${task}"`;
-          }
-          const command = Command.create("cmd", ["/c", commandStr]);
-          await command.execute();
-          console.log(`✅ Skill ${skillName} 直接执行成功`);
-          onSkillExecuted?.(skillName);
-        } catch (fallbackErr) {
-          console.error(`❌ 回退执行也失败 / Fallback execution also failed:`, fallbackErr);
-        }
+      // 构建完整命令 / Build full command
+      let fullCommand = `/${skillName}`;
+      if (task) {
+        fullCommand = `/${skillName} ${task}`;
       }
+
+      // 导入 Tauri API / Import Tauri API
+      const { invoke } = await import("@tauri-apps/api/core");
+
+      // 发送命令到 Claude Code CLI / Send command to Claude Code CLI
+      await invoke("send_to_claude_cli", { command: fullCommand });
+
+      console.log(`✅ Skill ${skillName} 已发送到 CLI`);
+
+      // 记录使用情况 / Record usage
+      onSkillExecuted?.(skillName);
     },
     [filteredSkills, parsedInput, onSkillExecuted]
   );

@@ -33,6 +33,7 @@ function App() {
     setRawInput,
     parsedInput,
     filteredSkills,
+    executeSkill,
     clearInput,
   } = useInputParser(sortedSkills, recordUsage);
 
@@ -55,94 +56,20 @@ function App() {
     handleTabComplete // Tab 自动补全 / Tab auto-complete
   );
 
-  // Ensure Tauri API is ready before executing / 确保 Tauri API 就绪后再执行
-  async function ensureTauriReady(): Promise<void> {
-    let retries = 0;
-    const maxRetries = 50; // 增加到 5 秒 / Increase to 5 seconds
-
-    while (retries < maxRetries) {
-      try {
-        const { invoke } = await import("@tauri-apps/api/core");
-        await invoke("health_check");
-        console.log("✅ Tauri API 已就绪 / Tauri API ready");
-        return; // 成功则返回 / Success, return
-      } catch (e) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        retries++;
-      }
-    }
-
-    throw new Error("Tauri API 未就绪 / Tauri API not ready");
-  }
-
   // Execute selected skill / 执行选中的 Skill
   async function handleExecuteSkill(index: number) {
-    const skill = filteredSkills[index];
-    if (skill) {
-      try {
-        // 等待 Tauri API 就绪 / Wait for Tauri API to be ready
-        await ensureTauriReady();
-
-        // 如果是任务模式，传递任务参数 / If task mode, pass task parameter
-        if (parsedInput?.mode === "task" && parsedInput.task) {
-          await executeSkillWithTask(skill, parsedInput.task);
-        } else {
-          await executeSkillDirectly(skill);
-        }
-        // 执行后清空输入 / Clear input after execution
-        clearInput();
-      } catch (err) {
-        console.error(`执行 skill 失败 / Failed to execute skill:`, err);
-        // 显示错误提示给用户 / Show error to user
-        alert(`执行失败: ${err}\n请稍后重试 / Please try again later`);
-      }
-    }
-  }
-
-  // Execute skill with task / 执行 Skill 并传递任务
-  async function executeSkillWithTask(skill: Skill, task: string) {
-    if (!skill.command) {
-      console.warn(`Skill ${skill.name} has no command defined`);
-      return;
-    }
-
     try {
-      // Import shell plugin dynamically / 动态导入 shell 插件
-      const { Command } = await import("@tauri-apps/plugin-shell");
+      // 使用 useInputParser 的 executeSkill 方法
+      // 它会调用 send_to_claude_cli 将命令发送到终端
+      await executeSkill(index);
 
-      // 构建完整命令：将任务作为参数传递 / Build full command: pass task as parameter
-      const fullCommand = `${skill.command} "${task}"`;
-
-      // Execute the command / 执行命令
-      const command = Command.create("cmd", ["/c", fullCommand]);
-      const output = await command.execute();
-
-      console.log(`✅ Skill ${skill.name} executed with task:`, output);
+      // 执行后隐藏窗口 / Hide window after execution
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      await getCurrentWindow().hide();
     } catch (err) {
-      console.error(`❌ Failed to execute skill ${skill.name}:`, err);
-      throw err;
-    }
-  }
-
-  // Execute skill directly (without task) / 直接执行 Skill（无任务）
-  async function executeSkillDirectly(skill: Skill) {
-    if (!skill.command) {
-      console.warn(`Skill ${skill.name} has no command defined`);
-      return;
-    }
-
-    try {
-      // Import shell plugin dynamically / 动态导入 shell 插件
-      const { Command } = await import("@tauri-apps/plugin-shell");
-
-      // Execute the command / 执行命令
-      const command = Command.create("cmd", ["/c", skill.command]);
-      const output = await command.execute();
-
-      console.log(`✅ Skill ${skill.name} executed:`, output);
-    } catch (err) {
-      console.error(`❌ Failed to execute skill ${skill.name}:`, err);
-      throw err;
+      console.error(`执行 skill 失败 / Failed to execute skill:`, err);
+      // 显示错误提示给用户 / Show error to user
+      alert(`执行失败: ${err}\n请稍后重试 / Please try again later`);
     }
   }
 
