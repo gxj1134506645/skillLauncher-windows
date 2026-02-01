@@ -4,62 +4,65 @@ Windows 版 Claude Code Skills 快速启动器，灵感来自 [SkillLauncher (ma
 
 [![Download](https://img.shields.io/badge/Download-Latest-blue)](https://github.com/gxj1134506645/skillLauncher-windows/releases/latest) ![Skill Launcher](https://img.shields.io/badge/Platform-Windows-blue) ![Tauri](https://img.shields.io/badge/Tauri-2.0-orange) ![License](https://img.shields.io/badge/License-MIT-green)
 
-## 🚀 超简单安装（3 步完成）
+## 🚀 新用户快速上手（GUI）
 
-### 1️⃣ 下载
+### 1️⃣ 获取项目
+```powershell
+git clone https://github.com/gxj1134506645/skillLauncher-windows.git
+cd skillLauncher-windows
+```
+
+### 2️⃣ 启动应用（自动安装全局 skill）
+```powershell
+npm install
+npm run tauri dev
+```
+应用首次启动会自动安装全局 skill 到 `~/.claude/skills/skill-launcher/`。
+
+---
+
+## 🪟 安装版（可选）
+### 1️⃣ 下载并安装
 前往 [Releases 页面](https://github.com/gxj1134506645/skillLauncher-windows/releases/latest) 下载：
 ```
 Skill Launcher_1.0.0_x64-setup.exe
 ```
+双击安装。
 
-### 2️⃣ 安装
-双击 `setup.exe`，点击"下一步"直到安装完成。
-
-**应用会在首次启动时自动配置 Claude Code skill！** ✨
-
-### 3️⃣ 使用
-完全退出 **Claude Code**，重新打开，输入：
+### 2️⃣ 使用 /skill-launcher
+重新打开 Claude Code CLI，输入：
 ```
 /skill-launcher
 ```
+会启动 Skill Launcher GUI。
 
 ---
 
 ## ✨ 功能特性
 
-- **全局快捷键** - `Ctrl+Shift+P` 随时唤起，不打断工作流
+- **全局 skill** - 安装一次，所有项目可用
+- **项目级优先** - 项目内 skills 优先于全局 skills
 - **智能搜索** - 输入关键词，模糊匹配 skills
-- **智能排序** - 常用的 skills 自动排在前面
-- **键盘导航** - `↑↓` 选择，`Enter` 执行，`Esc` 隐藏
-- **自动配置** - 首次启动自动配置 Claude Code skill
-- **使用记录** - 记录使用频率，智能排序
+- **点击复制** - 点击 skill 直接复制 `/skill-name`
 
 ---
 
 ## 🎯 使用方法
-
-### 启动方式
-
-**方式 1：Claude Code CLI（推荐）**
+在 Claude Code 里输入：
 ```
 /skill-launcher
 ```
-
-**方式 2：全局快捷键**
-按 `Ctrl+Shift+P`
-
-**方式 3：桌面快捷方式**
-双击桌面图标
+点击任意 skill，会将 `/skill-name` 复制到剪贴板，回到 CLI 粘贴即可。
 
 ---
 
-## 🎮 快捷键
+## 🎮 GUI 快捷键
 
 | 快捷键 | 功能 |
 |--------|------|
-| `Ctrl+Shift+P` | 打开/关闭启动器 |
+| `Ctrl+Alt+Space` | 打开/关闭启动器（可在设置里修改） |
 | `↑` / `↓` | 上下选择 |
-| `Enter` | 发送到 Claude Code CLI |
+| `Enter` | 复制到剪贴板 |
 | `Esc` | 关闭窗口 |
 | `Tab` | 自动补全 skill 名称 |
 

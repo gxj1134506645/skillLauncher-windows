@@ -1,130 +1,109 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Mutex;
 use tauri::Manager;
 
 pub mod skills;
 
 pub use skills::*;
 
+#[derive(Default)]
+struct TargetWindowState {
+    hwnd: Mutex<Option<i64>>,
+}
+
 /// Setup Claude Code skill on first run
 /// 首次运行时配置 Claude Code skill
 fn setup_claude_skill() -> Result<(), String> {
-    use tauri_plugin_fs::Fs;
-
     println!("🔧 Checking Claude Code skill configuration...");
 
+    const SKILL_MD_CONTENT: &str = include_str!("../../skills/skill-launcher/skill.md");
+    const LAUNCH_BAT_CONTENT: &str = include_str!("../../skills/skill-launcher/launch.bat");
+    const LAUNCH_PS1_CONTENT: &str = include_str!("../../skills/skill-launcher/launch.ps1");
+
     // Get Claude skills directory
-    // 获取 Claude skills 目录
-    let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
-    let skills_dir = home.join(".claude").join("skills");
+    // 获取 Claude skills 目录（优先项目级）
+    let skills_dir = if let Ok(root) = std::env::var("SKILL_LAUNCHER_PROJECT_ROOT") {
+        let root_path = PathBuf::from(root);
+        if root_path.exists() {
+            root_path.join(".claude").join("skills")
+        } else {
+            let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
+            home.join(".claude").join("skills")
+        }
+    } else {
+        let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
+        home.join(".claude").join("skills")
+    };
     let skill_dir = skills_dir.join("skill-launcher");
+    let legacy_skill_md = skill_dir.join("skill.md");
+    let legacy_launch_simple = skill_dir.join("launch-simple.bat");
+    let legacy_launch_universal = skill_dir.join("launch-universal.bat");
+
+    // Check if already configured
+    // 检查是否已配置
+    let skill_md = skill_dir.join("SKILL.md");
+    let launch_bat = skill_dir.join("launch.bat");
+    let launch_ps1 = skill_dir.join("launch.ps1");
+
+    let mut needs_reinstall = false;
+    if legacy_skill_md.exists() || legacy_launch_simple.exists() || legacy_launch_universal.exists() {
+        needs_reinstall = true;
+    }
+
+    let should_write_skill = match fs::read_to_string(&skill_md) {
+        Ok(existing) => !existing.to_lowercase().contains("command:"),
+        Err(_) => true,
+    };
+
+    if should_write_skill {
+        needs_reinstall = true;
+    }
+
+    let should_write_launch = match fs::read_to_string(&launch_bat) {
+        Ok(existing) => !existing.contains("Skill Launcher Windows Startup Script"),
+        Err(_) => true,
+    };
+
+    let should_write_launch_ps1 = match fs::read_to_string(&launch_ps1) {
+        Ok(existing) => !existing.contains("launch.bat"),
+        Err(_) => true,
+    };
+
+    if needs_reinstall && skill_dir.exists() {
+        fs::remove_dir_all(&skill_dir)
+            .map_err(|e| format!("Failed to remove old skill directory: {}", e))?;
+    }
 
     // Create directories if they don't exist
     // 如果目录不存在则创建
     fs::create_dir_all(&skill_dir).map_err(|e| format!("Failed to create skill directory: {}", e))?;
 
-    // Check if already configured
-    // 检查是否已配置
-    let skill_md = skill_dir.join("SKILL.md");
-    if skill_md.exists() {
+    let mut wrote_any = false;
+
+    if needs_reinstall || should_write_skill {
+        println!("📝 Installing Claude Code SKILL.md...");
+        fs::write(&skill_md, SKILL_MD_CONTENT).map_err(|e| format!("Failed to write SKILL.md: {}", e))?;
+        wrote_any = true;
+    }
+
+    if needs_reinstall || should_write_launch {
+        println!("📝 Installing Claude Code launch.bat...");
+        fs::write(&launch_bat, LAUNCH_BAT_CONTENT).map_err(|e| format!("Failed to write launch.bat: {}", e))?;
+        wrote_any = true;
+    }
+
+    if needs_reinstall || should_write_launch_ps1 {
+        println!("📝 Installing Claude Code launch.ps1...");
+        fs::write(&launch_ps1, LAUNCH_PS1_CONTENT).map_err(|e| format!("Failed to write launch.ps1: {}", e))?;
+        wrote_any = true;
+    }
+
+    if !wrote_any {
         println!("✅ Claude Code skill already configured");
         return Ok(());
     }
-
-    println!("📝 Installing Claude Code skill...");
-
-    // Create SKILL.md content
-    // 创建 SKILL.md 内容
-    let skill_content = r#"---
-name: skill-launcher
-description: Launch the interactive skill selector in the terminal. Shows all available Claude Code skills for quick selection.
----
-
-# Skill Launcher for Windows
-
-When this skill is invoked, display all available skills in an interactive grid view for user selection.
-
-## Execution Instructions
-
-Execute the following PowerShell command:
-
-```powershell
-$skills = @(
-    @{Name="commit"; Description="Create well-formatted commits with conventional commit messages"},
-    @{Name="review-pr"; Description="Review and provide feedback on pull requests"},
-    @{Name="explain"; Description="Explain code or technical concepts"},
-    @{Name="refactor"; Description="Refactor code for better structure"},
-    @{Name="test"; Description="Generate or run tests"},
-    @{Name="doc"; Description="Generate documentation"},
-    @{Name="fix"; Description="Fix bugs or errors"},
-    @{Name="book-cover-generator"; Description="AI生成图书/电影等文学作品海报封面"},
-    @{Name="browser"; Description="Browser automation using Chrome DevTools Protocol"},
-    @{Name="canvas-design"; Description="Create visual art and designs"},
-    @{Name="docx"; Description="Comprehensive Word document creation and editing"},
-    @{Name="docx-format-replicator"; Description="Extract and replicate Word document formatting"},
-    @{Name="markdown-helper"; Description="Markdown document writing assistance"},
-    @{Name="obsidian-markdown"; Description="Create and edit Obsidian Flavored Markdown"},
-    @{Name="pdf"; Description="Comprehensive PDF manipulation toolkit"},
-    @{Name="report-generator"; Description="生成周报"},
-    @{Name="skill-creator"; Description="Guide for creating effective skills"},
-    @{Name="video-processor"; Description="Download and process videos from YouTube and other platforms"},
-    @{Name="wechat-article-writer"; Description="公众号文章自动化写作流程"},
-    @{Name="xlsx"; Description="Comprehensive spreadsheet creation and editing"}
-)
-$selected = $skills | Out-GridView -Title "Select a Skill" -OutputMode Single
-if ($selected) {
-    Write-Host "/$($selected.Name)"
-}
-```
-
-This will open an interactive grid view where users can:
-- Browse all available skills
-- Click to select a skill
-- The selected skill command will be output to the terminal
-"#;
-
-    fs::write(&skill_md, skill_content).map_err(|e| format!("Failed to write skill.md: {}", e))?;
-
-    // Create launch.bat with auto-detection
-    // 创建具有自动检测功能的 launch.bat
-    let launch_bat = skill_dir.join("launch.bat");
-    let launch_content = r#"@echo off
-REM Auto-find and launch Skill Launcher
-REM Auto-find et lancer Skill Launcher
-
-set "EXE_PATH="
-
-if exist "%LOCALAPPDATA%\Programs\skill-launcher\skill-launcher.exe" (
-    set "EXE_PATH=%LOCALAPPDATA%\Programs\skill-launcher\skill-launcher.exe"
-    goto :launch
-)
-
-if exist "%LOCALAPPDATA%\Skill Launcher\skill-launcher.exe" (
-    set "EXE_PATH=%LOCALAPPDATA%\Skill Launcher\skill-launcher.exe"
-    goto :launch
-)
-
-if exist "%PROGRAMFILES%\Skill Launcher\skill-launcher.exe" (
-    set "EXE_PATH=%PROGRAMFILES%\Skill Launcher\skill-launcher.exe"
-    goto :launch
-)
-
-if exist "%USERPROFILE%\skillLauncher-windows\src-tauri\target\release\skill-launcher.exe" (
-    set "EXE_PATH=%USERPROFILE%\skillLauncher-windows\src-tauri\target\release\skill-launcher.exe"
-    goto :launch
-)
-
-echo Error: Skill Launcher not found!
-timeout /t 3
-exit /b 1
-
-:launch
-start "" "%EXE_PATH%"
-exit /b 0
-"#;
-
-    fs::write(&launch_bat, launch_content).map_err(|e| format!("Failed to write launch.bat: {}", e))?;
 
     println!("✅ Claude Code skill configured successfully!");
     println!("📍 Location: {}", skill_dir.display());
@@ -308,10 +287,25 @@ fn health_check() -> String {
 /// Send command to Claude Code CLI window
 /// 发送命令到 Claude Code CLI 窗口
 #[tauri::command]
-async fn send_to_claude_cli(command: String) -> Result<(), String> {
+async fn send_to_claude_cli(
+    command: String,
+    target_hwnd: Option<i64>,
+    state: tauri::State<'_, TargetWindowState>,
+) -> Result<(), String> {
     use std::process::Command;
 
     println!("正在发送命令到 Claude Code CLI: {}", command);
+
+    let mut hwnd = target_hwnd;
+    if hwnd.is_some() {
+        if let Ok(mut guard) = state.hwnd.lock() {
+            *guard = hwnd;
+        }
+    } else if let Ok(guard) = state.hwnd.lock() {
+        hwnd = *guard;
+    }
+
+    let hwnd_value = hwnd.unwrap_or(0);
 
     // 使用 PowerShell 将命令发送到终端窗口
     // 使用 Add-Type 引入 Windows API 来激活特定窗口
@@ -324,52 +318,67 @@ Add-Type @"
   public class Win32 {{
     [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr hWnd);
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
   }}
 "@
 
+# 优先使用传入的窗口句柄 / Prefer provided window handle
+$targetHwnd = {hwnd_value}
+$found = $false
+if ($targetHwnd -ne 0) {{
+    $hwndPtr = [IntPtr]$targetHwnd
+    if ([Win32]::IsWindow($hwndPtr)) {{
+        [Win32]::ShowWindow($hwndPtr, 5) | Out-Null
+        [Win32]::SetForegroundWindow($hwndPtr) | Out-Null
+        $found = $true
+    }}
+}}
+
 # 设置剪贴板 / Set clipboard
-Set-Clipboard -Value "{}"
+Set-Clipboard -Value "{cmd}"
 
 # 等待剪贴板设置完成 / Wait for clipboard
 Start-Sleep -Milliseconds 300
 
-# 尝试找到并激活 Windows Terminal 或 PowerShell 窗口
-# Try to find and activate Windows Terminal or PowerShell window
-$processes = Get-Process | Where-Object {{
-    $_.MainWindowTitle -ne "" -and `
-    ($_.ProcessName -match "WindowsTerminal" -or `
-     $_.ProcessName -match "pwsh" -or `
-     $_.ProcessName -match "powershell" -or `
-     $_.ProcessName -match "Code")
-}}
-
-$found = $false
-foreach ($proc in $processes) {{
-    if ($proc.MainWindowTitle -ne "") {{
-        Write-Host "Found window: $($proc.ProcessName) - $($proc.MainWindowTitle)"
-        [Win32]::SetForegroundWindow($proc.MainWindowHandle) | Out-Null
-        Start-Sleep -Milliseconds 200
-        $found = $true
-        break
-    }}
-}}
-
+# 尝试找到并激活 Windows Terminal 或 PowerShell 窗口（回退方案）
+# Try to find and activate Windows Terminal or PowerShell window (fallback)
 if (-not $found) {{
-    Write-Host "No terminal window found, trying Alt+Tab"
-    $wshell = New-Object -ComObject WScript.Shell
-    $wshell.SendKeys("%(+{{TAB}})")
-    Start-Sleep -Milliseconds 200
+    $processes = Get-Process | Where-Object {{
+        $_.MainWindowTitle -ne "" -and `
+        ($_.ProcessName -match "WindowsTerminal" -or `
+         $_.ProcessName -match "pwsh" -or `
+         $_.ProcessName -match "powershell" -or `
+         $_.ProcessName -match "Code")
+    }}
+
+    foreach ($proc in $processes) {{
+        if ($proc.MainWindowTitle -ne "") {{
+            Write-Host "Found window: $($proc.ProcessName) - $($proc.MainWindowTitle)"
+            [Win32]::SetForegroundWindow($proc.MainWindowHandle) | Out-Null
+            Start-Sleep -Milliseconds 200
+            $found = $true
+            break
+        }}
+    }}
+
+    if (-not $found) {{
+        Write-Host "No terminal window found, trying Alt+Tab"
+        $wshell = New-Object -ComObject WScript.Shell
+        $wshell.SendKeys("%(+{{TAB}})")
+        Start-Sleep -Milliseconds 200
+    }}
 }}
 
 # 发送 Ctrl+V 粘贴命令 / Send Ctrl+V to paste command
 $wshell = New-Object -ComObject WScript.Shell
 $wshell.SendKeys("^(v)")
 
-Write-Host "Command sent: {}"
+Write-Host "Command sent: {cmd}"
 "#,
-        command, command
+        cmd = command,
+        hwnd_value = hwnd_value
     );
 
     let output = Command::new("powershell")
@@ -454,8 +463,27 @@ fn update_shortcut(shortcut: ShortcutConfig, app_handle: tauri::AppHandle) -> Re
 pub fn run() {
     // Load settings / 加载设置
     let settings = load_settings();
+    let mut target_hwnd: Option<i64> = None;
+
+    // Parse CLI args for target window handle
+    let mut args = std::env::args().peekable();
+    while let Some(arg) = args.next() {
+        if let Some(value) = arg.strip_prefix("--target-hwnd=") {
+            target_hwnd = value.parse::<i64>().ok();
+            continue;
+        }
+        if arg == "--target-hwnd" {
+            if let Some(next) = args.peek() {
+                target_hwnd = next.parse::<i64>().ok();
+                let _ = args.next();
+            }
+        }
+    }
 
     tauri::Builder::default()
+        .manage(TargetWindowState {
+            hwnd: Mutex::new(target_hwnd),
+        })
         // Register shell plugin for executing commands
         // 注册 shell 插件用于执行命令
         .plugin(tauri_plugin_shell::init())

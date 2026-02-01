@@ -1,54 +1,37 @@
 ---
 name: skill-launcher
-description: Launch SkillLauncher Windows - A quick launcher for Claude Code Skills
+description: GUI skill picker for Claude Code (project skills first)
 ---
 
 # Skill Launcher Windows
 
-This skill launches the SkillLauncher Windows application.
+This skill opens the Skill Launcher GUI on Windows.
+It shows project-level skills first, then falls back to user-level skills.
 
 ## Instructions
 
 When the user invokes this skill, perform the following steps:
 
-1. **Check if SkillLauncher is installed**
-   - Look for the executable at common locations:
-     - `%USERPROFILE%\skillLauncher-windows\src-tauri\target\release\skill-launcher.exe`
-     - `%LOCALAPPDATA%\skill-launcher\skill-launcher.exe`
-
-2. **If installed, launch it**
+1. **Run the GUI launcher**
    ```powershell
-   Start-Process "skill-launcher.exe"
+   pwsh -NoProfile -ExecutionPolicy Bypass -File skill-launcher.ps1
    ```
 
-3. **If not installed, guide the user**
-   Tell the user:
-
-   > SkillLauncher Windows is not installed. To install:
-   >
-   > 1. Clone the repository:
-   >    ```
-   >    git clone https://github.com/gxj1134506645/skillLauncher-windows.git
-   >    ```
-   > 2. Install dependencies:
-   >    ```
-   >    cd skillLauncher-windows
-   >    npm install
-   >    ```
-   > 3. Build the application:
-   >    ```
-   >    npm run tauri build
-   >    ```
-   > 4. The executable will be at `src-tauri/target/release/skill-launcher.exe`
+2. **Pick a skill**
+   - Search by name
+   - Click to copy the skill name to clipboard
 
 ## Usage
 
-After launching, use:
-- `Ctrl+Shift+P` to toggle the launcher window
-- Type to search skills
-- Arrow keys to navigate
-- Enter to execute
-- Escape to hide
+Search order (priority):
+1. `./skills`
+2. `./.codex/skills`
+3. `./.claude/skills`
+4. `~/.claude/skills`
+
+Notes:
+- If a skill name appears in multiple locations, the first match wins.
+- Set `SKILL_LAUNCHER_PROJECT_ROOT` to override the project root.
 
 ## Repository
 

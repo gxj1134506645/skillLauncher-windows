@@ -56,16 +56,14 @@ function App() {
     handleTabComplete // Tab 自动补全 / Tab auto-complete
   );
 
-  // Execute selected skill / 执行选中的 Skill
+  // Execute selected skill / 复制选中的 Skill
   async function handleExecuteSkill(index: number) {
     try {
       // 使用 useInputParser 的 executeSkill 方法
-      // 它会调用 send_to_claude_cli 将命令发送到终端
+      // 它会复制 skill 名称到剪贴板
       await executeSkill(index);
 
-      // 执行后隐藏窗口 / Hide window after execution
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      await getCurrentWindow().hide();
+      // 复制后保持窗口 / Keep window visible after copy
     } catch (err) {
       console.error(`执行 skill 失败 / Failed to execute skill:`, err);
       // 显示错误提示给用户 / Show error to user
@@ -93,9 +91,9 @@ function App() {
       case "search":
         return "搜索 skills... / Search skills...";
       case "direct":
-        return `执行 /${parsedInput.skillName}`;
+        return `复制 ${parsedInput.skillName}`;
       case "task":
-        return `任务: ${parsedInput.task}`;
+        return `复制: ${parsedInput.task}`;
     }
   };
 

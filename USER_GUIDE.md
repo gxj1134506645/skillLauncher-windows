@@ -8,15 +8,15 @@
 2. 下载 `Skill Launcher_1.0.0_x64-setup.exe`
 3. 双击安装
 
-### 步骤 2：配置 Claude Code Skill（自动）
+### 步骤 2：首次运行（自动配置）
 
-安装完成后，应用会**自动**将 skill 配置到：
+首次运行应用会自动将全局 skill 配置到：
 ```
 %USERPROFILE%\.claude\skills\skill-launcher\
 ```
 
 包含文件：
-- `skill.md` - Skill 定义
+- `SKILL.md` - Skill 定义
 - `launch.bat` - 启动脚本（自动查找已安装的 exe）
 
 ### 步骤 3：重启 Claude Code
@@ -56,8 +56,8 @@
    ```powershell
    setx SKILL_LAUNCHER_PATH "F:\skillLauncher-windows"
    ```
-4. 手动复制 skill 文件到 Claude Code skills 目录
-5. 运行 `npm run tauri build` 编译
+4. 运行 `npm run tauri build` 编译
+5. 运行一次应用（自动配置）
 6. 重启 Claude Code
 
 ---
@@ -87,6 +87,10 @@
    ```
    %SKILL_LAUNCHER_PATH%\src-tauri\target\release\skill-launcher.exe
    ```
+5. **当前项目目录**（开发调试）
+   ```
+   %CD%\src-tauri\target\debug\skill-launcher.exe
+   ```
 
 ---
 
@@ -94,16 +98,9 @@
 
 ### 问题 1：输入 `/skill-launcher` 没反应
 
-**原因**：环境变量未生效
+**原因**：未运行过应用，自动配置未完成
 
-**解决**：
-```powershell
-# 临时设置（当前会话）
-$env:SKILL_LAUNCHER_PATH="你的项目路径"
-
-# 永久设置
-setx SKILL_LAUNCHER_PATH "你的项目路径"
-```
+**解决**：先启动一次 Skill Launcher 应用，再重启 Claude Code。
 
 ### 问题 2：找不到 exe 文件
 
@@ -130,9 +127,7 @@ npm install
 # 3. 编译
 npm run tauri build
 
-# 4. 设置环境变量
-setx SKILL_LAUNCHER_PATH "F:\skillLauncher-windows"
-
+# 4. 运行一次应用（自动配置）
 # 5. 重启终端并测试
 ```
 

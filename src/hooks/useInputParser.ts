@@ -130,25 +130,45 @@ export function useInputParser(
         return;
       }
 
-      // 准备执行参数 / Prepare execution parameters
+      // 准备复制到剪贴板 / Prepare clipboard content
       const skillName = skill.name.startsWith("/") ? skill.name.slice(1) : skill.name;
       const task = parsedInput?.mode === "task" ? parsedInput.task : undefined;
 
-      console.log(`发送 skill 到 CLI / Send skill to CLI: /${skillName}`, task ? `任务 / Task: ${task}` : "");
+      const content = task ? `/${skillName} ${task}` : `/${skillName}`;
 
-      // 构建完整命令 / Build full command
-      let fullCommand = `/${skillName}`;
-      if (task) {
-        fullCommand = `/${skillName} ${task}`;
+      // 优先使用 navigator.clipboard / Prefer navigator.clipboard
+      let copied = false;
+      if (navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(content);
+          copied = true;
+        } catch {
+          copied = false;
+        }
       }
 
-      // 导入 Tauri API / Import Tauri API
-      const { invoke } = await import("@tauri-apps/api/core");
+      // 回退方案：临时 textarea + execCommand / Fallback: textarea + execCommand
+      if (!copied) {
+        const textarea = document.createElement("textarea");
+        textarea.value = content;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          copied = document.execCommand("copy");
+        } catch {
+          copied = false;
+        } finally {
+          document.body.removeChild(textarea);
+        }
+      }
 
-      // 发送命令到 Claude Code CLI / Send command to Claude Code CLI
-      await invoke("send_to_claude_cli", { command: fullCommand });
+      if (!copied) {
+        throw new Error("复制到剪贴板失败 / Failed to copy to clipboard");
+      }
 
-      console.log(`✅ Skill ${skillName} 已发送到 CLI`);
+      console.log(`✅ Skill 已复制到剪贴板: ${content}`);
 
       // 记录使用情况 / Record usage
       onSkillExecuted?.(skillName);

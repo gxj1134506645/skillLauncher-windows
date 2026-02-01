@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
+use std::collections::HashSet;
 
 /// Plugin marketplace configuration
 /// Plugin marketplace 配置
@@ -196,45 +197,78 @@ fn get_skills_dir() -> PathBuf {
     home.join(".claude").join("skills")
 }
 
-/// Scan skills directory and return all skills
-/// 扫描 skills 目录并返回所有 skills
-#[tauri::command]
-pub fn scan_skills_directory() -> Result<Vec<FrontendSkill>, String> {
-    let skills_dir = get_skills_dir();
-
-    // Check if directory exists / 检查目录是否存在
-    if !skills_dir.exists() {
-        return Ok(vec![]);
+/// Get project root for skill scanning
+/// 获取用于扫描 skills 的项目根目录
+fn get_project_root() -> Option<PathBuf> {
+    if let Ok(root) = std::env::var("SKILL_LAUNCHER_PROJECT_ROOT") {
+        let path = PathBuf::from(root);
+        if path.exists() {
+            return Some(path);
+        }
     }
 
-    let mut skills = vec![];
+    std::env::current_dir().ok()
+}
 
-    // Read all subdirectories / 读取所有子目录
-    let entries = fs::read_dir(&skills_dir)
+/// Get ordered skill directories
+/// 获取按优先级排序的 skills 目录列表
+fn get_skill_directories() -> Vec<PathBuf> {
+    let mut dirs = Vec::new();
+
+    if let Some(project_root) = get_project_root() {
+        dirs.push(project_root.join("skills"));
+        dirs.push(project_root.join(".codex").join("skills"));
+        dirs.push(project_root.join(".claude").join("skills"));
+    }
+
+    dirs.push(get_skills_dir());
+
+    dirs
+}
+
+/// Scan a single directory and append skills with de-duplication
+/// 扫描单个目录并去重追加 skills
+fn scan_directory(dir: &PathBuf, skills: &mut Vec<FrontendSkill>, seen: &mut HashSet<String>) -> Result<(), String> {
+    if !dir.exists() {
+        return Ok(());
+    }
+
+    let entries = fs::read_dir(dir)
         .map_err(|e| format!("无法读取 skills 目录: {}", e))?;
 
     for entry in entries {
         let entry = entry.map_err(|e| format!("读取目录项失败: {}", e))?;
 
-        // Only process directories / 只处理目录
         if !entry.path().is_dir() {
             continue;
         }
 
         let skill_name = entry.file_name();
-
-        // Skip hidden directories / 跳过隐藏目录
-        // Convert OsString to string for checking / 转换 OsString 为字符串进行检查
         if let Some(name_str) = skill_name.to_str() {
             if name_str.starts_with('.') {
                 continue;
             }
         }
 
-        // Parse skill / 解析 skill
         if let Some(skill) = parse_skill(&entry.path()) {
-            skills.push(skill);
+            if seen.insert(skill.name.clone()) {
+                skills.push(skill);
+            }
         }
+    }
+
+    Ok(())
+}
+
+/// Scan skills directory and return all skills
+/// 扫描 skills 目录并返回所有 skills
+#[tauri::command]
+pub fn scan_skills_directory() -> Result<Vec<FrontendSkill>, String> {
+    let mut skills = vec![];
+    let mut seen: HashSet<String> = HashSet::new();
+
+    for dir in get_skill_directories().iter() {
+        scan_directory(dir, &mut skills, &mut seen)?;
     }
 
     Ok(skills)

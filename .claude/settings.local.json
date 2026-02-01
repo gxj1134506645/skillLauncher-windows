@@ -28,7 +28,11 @@
       "Bash(npm install:*)",
       "Bash(cargo build:*)",
       "Bash(powershell:*)",
-      "Bash(Test-Path:*)"
+      "Bash(Test-Path:*)",
+      "Bash(Start-Process:*)",
+      "Bash(cmd:*)",
+      "Bash(Get-Content \"C:\\\\Users\\\\11345\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Codes-skillLauncher-windows\\\\tasks\\\\b2b9855.output\" -Tail 100)",
+      "Bash(pwsh:*)"
     ]
   }
 }

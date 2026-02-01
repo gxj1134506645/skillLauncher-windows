@@ -19,6 +19,7 @@ export class SkillScanner {
           display_name: string;
           description: string;
           category: string;
+          marketplace: string;
           path: string;
           command: string;
         }>
@@ -30,7 +31,7 @@ export class SkillScanner {
         displayName: fs.display_name,
         description: fs.description,
         category: fs.category,
-        marketplace: undefined, // Rust 后端暂不支持 marketplace 字段
+        marketplace: fs.marketplace,
         path: fs.path,
         command: fs.command,
       }));

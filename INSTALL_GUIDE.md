@@ -15,28 +15,13 @@ C:\Users\你的用户名\AppData\Local\Programs\skill-launcher
 
 ---
 
-### 第 2 步：配置 Claude Code Skill
+### 第 2 步：配置 Claude Code Skill（自动）
 
-#### 方法 A：自动配置（推荐）
-
-双击运行：`install-skill.bat`
-
-这个脚本会自动：
-- ✅ 在 `~/.claude/skills/skill-launcher/` 创建 skill 文件
-- ✅ 配置自动查找已安装的应用
-- ✅ 无需任何手动设置
-
-#### 方法 B：手动配置
-
-如果你想手动配置：
-
-```powershell
-# 1. 创建 skill 目录
-mkdir $env:USERPROFILE\.claude\skills\skill-launcher
-
-# 2. 复制 skill.md（从项目根目录的 skills\skill-launcher\）
-# 复制文件到：C:\Users\你的用户名\.claude\skills\skill-launcher\
+首次运行 Skill Launcher 应用时，会自动安装全局 skill 到：
 ```
+%USERPROFILE%\.claude\skills\skill-launcher
+```
+无需手动复制任何文件。
 
 ---
 
@@ -60,7 +45,7 @@ mkdir $env:USERPROFILE\.claude\skills\skill-launcher
     ↓
 双击安装（自动安装到固定位置）
     ↓
-运行 install-skill.bat（自动配置 skill）
+首次运行应用（自动配置 skill）
     ↓
 重启 Claude Code
     ↓
@@ -80,12 +65,9 @@ mkdir $env:USERPROFILE\.claude\skills\skill-launcher
 setx SKILL_LAUNCHER_PATH "你的自定义路径"
 ```
 
-### Q2: install-skill.bat 找不到怎么办？
+### Q2: 输入 `/skill-launcher` 还是没反应？
 
-**A**: 这个文件在项目根目录，或者手动配置：
-
-1. 创建文件夹：`%USERPROFILE%\.claude\skills\skill-launcher\`
-2. 复制 `skill.md` 和 `launch.bat` 到这个文件夹
+**A**: 确认你已经运行过一次 Skill Launcher 应用（自动安装全局 skill）。
 
 ### Q3: 输入 `/skill-launcher` 没反应？
 
@@ -106,7 +88,7 @@ Test-Path "$env:LOCALAPPDATA\Programs\skill-launcher\skill-launcher.exe"
 
 ### 检查 skill 是否配置
 ```powershell
-Test-Path "$env:USERPROFILE\.claude\skills\skill-launcher\skill.md"
+Test-Path "$env:USERPROFILE\.claude\skills\skill-launcher\SKILL.md"
 ```
 应该返回 `True`
 
@@ -116,9 +98,9 @@ Test-Path "$env:USERPROFILE\.claude\skills\skill-launcher\skill.md"
 
 安装完成后，你可以：
 
-- ✅ 使用 `Ctrl+Shift+P` 快速唤起启动器
+- ✅ 使用 `Ctrl+Alt+Space` 快速唤起启动器（可在设置里修改）
 - ✅ 搜索和选择 skills
-- ✅ 按 Enter 将命令发送到 Claude Code CLI
+- ✅ 按 Enter 复制 `/skill-name` 到剪贴板
 - ✅ 自动记录使用频率，智能排序
 
 ---

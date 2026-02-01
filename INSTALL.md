@@ -18,7 +18,7 @@
 2. 进入项目目录
 3. 运行 npm install 安装依赖
 4. 运行 npm run tauri build 编译应用
-5. 把 skills/skill-launcher 目录复制到 %USERPROFILE%\.claude\skills\skill-launcher\
+5. 运行一次应用（会自动安装全局 skill）
 6. 把编译后的 exe 文件路径告诉我
 ```
 
@@ -32,7 +32,7 @@ Claude 会帮你搞定一切。
 
 首次运行会需要管理员权限（用于注册全局快捷键），点允许。
 
-然后 `Ctrl+Shift+P` 就能用了。
+然后 `Ctrl+Alt+Space` 就能用了（可在设置里修改）。
 
 ## 手动安装
 
@@ -63,21 +63,12 @@ npm install
 # 3. 编译应用
 npm run tauri build
 
-# 4. 复制 skill 文件
-xcopy skills\skill-launcher %USERPROFILE%\.claude\skills\skill-launcher\ /E /I /Y
-
-# 5. 运行应用
-# 编译后的 exe 位于: src-tauri\target\release\skill-launcher-windows.exe
+# 4. 运行应用（自动安装全局 skill）
+# 编译后的 exe 位于: src-tauri\target\release\skill-launcher.exe
 ```
 
-### 配置启动路径
-
-编译后，记下 exe 文件的完整路径，例如：
-```
-C:\Users\YourName\skillLauncher-windows\src-tauri\target\release\skill-launcher-windows.exe
-```
-
-在 `skills/skill-launcher/skill.md` 中更新 command 字段为你的实际路径。
+### 配置说明
+首次运行会自动安装全局 skill 到 `~/.claude/skills/skill-launcher/`，无需手动复制。
 
 ## 使用说明
 
@@ -85,28 +76,14 @@ C:\Users\YourName\skillLauncher-windows\src-tauri\target\release\skill-launcher-
 
 | 快捷键 | 功能 |
 |--------|------|
-| `Ctrl+Shift+P` | 打开/关闭启动器 |
+| `Ctrl+Alt+Space` | 打开/关闭启动器（可在设置里修改） |
 | `↑` / `↓` | 上下选择 |
-| `Enter` | 执行选中 skill |
+| `Enter` | 复制到剪贴板 |
 | `Esc` | 关闭窗口 |
 | `Tab` | 自动补全 skill 名称 |
 
-### 输入模式
-
-1. **搜索模式** - 直接输入关键词
-   ```
-   commit
-   ```
-
-2. **直接模式** - 使用 `/skill-name`
-   ```
-   /commit
-   ```
-
-3. **任务模式** - 使用 `/skill-name task`
-   ```
-   /commit fix bug
-   ```
+### 使用方式
+点击任意 skill，会把 `/skill-name` 复制到剪贴板，回到 Claude Code CLI 粘贴即可。
 
 ## 故障排除
 
@@ -123,8 +100,7 @@ C:\Users\YourName\skillLauncher-windows\src-tauri\target\release\skill-launcher-
 3. 在设置中修改快捷键
 
 ### 执行 skill 没反应
-
-1. 检查 skill 命令路径是否正确
+1. 确认应用已启动
 2. 在开发模式下查看控制台日志：`npm run tauri dev`
 
 ## 开发模式
