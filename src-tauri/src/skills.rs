@@ -322,7 +322,11 @@ fn parse_skill_md(content: &str) -> (Option<String>, String, String) {
 
                 match key {
                     "name" => name = Some(value.to_string()),
-                    "description" => description = Some(value.to_string()),
+                    "description" => {
+                        // Remove surrounding quotes if present / 移除外围引号
+                        let cleaned = value.trim_matches('"');
+                        description = Some(cleaned.to_string());
+                    }
                     _ => {}
                 }
             }

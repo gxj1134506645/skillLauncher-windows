@@ -32,7 +32,19 @@
       "Bash(Start-Process:*)",
       "Bash(cmd:*)",
       "Bash(Get-Content \"C:\\\\Users\\\\11345\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--Codes-skillLauncher-windows\\\\tasks\\\\b2b9855.output\" -Tail 100)",
-      "Bash(pwsh:*)"
+      "Bash(pwsh:*)",
+      "Bash(npm run tauri build:*)",
+      "Bash(Get-ChildItem -Path \"F:\\\\codes\\\\skillLauncher-windows\" -Force)",
+      "Bash(dir:*)",
+      "Bash(cmd.exe:*)",
+      "Bash(npm run build:*)",
+      "Bash(msiexec:*)",
+      "Bash(\"f:/codes/skillLauncher-windows/src-tauri/target/release/skill-launcher.exe\" --project-root \"f:/codes/skillLauncher-windows\")",
+      "Bash(Remove-Item \"F:\\\\codes\\\\skillLauncher-windows\\\\skills\\\\skill-launcher\\\\launch.bat\" -Force)",
+      "Bash(Remove-Item:*)",
+      "mcp__zai-mcp-server__extract_text_from_screenshot",
+      "Bash(find:*)",
+      "Bash(cat:*)"
     ]
   }
 }

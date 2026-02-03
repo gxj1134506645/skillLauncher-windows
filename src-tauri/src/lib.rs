@@ -8,9 +8,117 @@ pub mod skills;
 
 pub use skills::*;
 
+/// Project info state
+/// 项目信息状态
+#[derive(Default)]
+struct ProjectState {
+    root_path: Mutex<Option<String>>,
+}
+
 #[derive(Default)]
 struct TargetWindowState {
     hwnd: Mutex<Option<i64>>,
+}
+
+/// Generate a unique mutex name for a project path
+/// 为项目路径生成唯一的互斥量名称
+fn get_project_mutex_name(project_root: &str) -> String {
+    // Use hash of project path to create a valid mutex name
+    // 使用项目路径的 hash 创建有效的互斥量名称
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    project_root.hash(&mut hasher);
+    let hash = hasher.finish();
+    format!("Global\\SkillLauncher_Project_{:X}", hash)
+}
+
+/// Check if a window for this project already exists and activate it
+/// 检查该项目的窗口是否已存在并激活它
+fn check_and_activate_existing_window(project_root: &str) -> bool {
+    #[cfg(windows)]
+    {
+        use std::process::Command;
+
+        // Extract project name from path for matching window title
+        // 从路径提取项目名用于匹配窗口标题
+        let project_name = if let Some(last_sep) = project_root.rfind(['\\', '/']) {
+            &project_root[last_sep + 1..]
+        } else {
+            project_root
+        };
+
+        let expected_title = format!("Skill Launcher - {}", project_name);
+
+        // Try to activate existing window using PowerShell
+        // 使用 PowerShell 尝试激活现有窗口
+        let script = format!(
+            r#"
+Add-Type @"
+  using System;
+  using System.Runtime.InteropServices;
+  public class Win32 {{
+    [DllImport("user32.dll")] public static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
+    [DllImport("user32.dll")] public static extern bool GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
+    [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr hWnd);
+    [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hWnd);
+    public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+  }}
+"@
+
+$targetTitle = "{}"
+$found = $false
+
+[Win32]::EnumWindows({{
+    param($hWnd, $lParam)
+    $title = New-Object System.Text.StringBuilder(256)
+    if ([Win32]::GetWindowText($hWnd, $title, 256)) {{
+        $windowTitle = $title.ToString()
+        if ($windowTitle -eq $targetTitle) {{
+            # Restore if minimized
+            if ([Win32]::IsIconic($hWnd)) {{
+                [Win32]::ShowWindow($hWnd, 9) | Out-Null  # SW_RESTORE
+            }}
+            # Bring to front
+            [Win32]::ShowWindow($hWnd, 5) | Out-Null  # SW_SHOW
+            [Win32]::SetForegroundWindow($hWnd) | Out-Null
+            $script:found = $true
+            return $false
+        }}
+    }}
+    return $true
+}}, 0)
+
+if ($found) {{ exit 0 }} else {{ exit 1 }}
+"#,
+            expected_title
+        );
+
+        println!("🔍 检查窗口: {}", expected_title);
+
+        match Command::new("powershell")
+            .args(["-NoProfile", "-Command", &script])
+            .output()
+        {
+            Ok(output) => {
+                let success = output.status.success();
+                if success {
+                    println!("✅ 找到并激活已有窗口");
+                } else {
+                    println!("🔍 未找到已有窗口，将创建新窗口");
+                }
+                success
+            },
+            Err(e) => {
+                println!("⚠️ 检查窗口时出错: {}", e);
+                false
+            }
+        }
+    }
+
+    #[cfg(not(windows))]
+    false
 }
 
 /// Setup Claude Code skill on first run
@@ -19,97 +127,60 @@ fn setup_claude_skill() -> Result<(), String> {
     println!("🔧 Checking Claude Code skill configuration...");
 
     const SKILL_MD_CONTENT: &str = include_str!("../../skills/skill-launcher/skill.md");
-    const LAUNCH_BAT_CONTENT: &str = include_str!("../../skills/skill-launcher/launch.bat");
-    const LAUNCH_PS1_CONTENT: &str = include_str!("../../skills/skill-launcher/launch.ps1");
 
-    // Get Claude skills directory
-    // 获取 Claude skills 目录（优先项目级）
-    let skills_dir = if let Ok(root) = std::env::var("SKILL_LAUNCHER_PROJECT_ROOT") {
-        let root_path = PathBuf::from(root);
-        if root_path.exists() {
-            root_path.join(".claude").join("skills")
-        } else {
-            let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
-            home.join(".claude").join("skills")
-        }
-    } else {
-        let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
-        home.join(".claude").join("skills")
-    };
+    let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
+    let skills_dir = home.join(".claude").join("skills");
     let skill_dir = skills_dir.join("skill-launcher");
-    let legacy_skill_md = skill_dir.join("skill.md");
-    let legacy_launch_simple = skill_dir.join("launch-simple.bat");
-    let legacy_launch_universal = skill_dir.join("launch-universal.bat");
 
-    // Check if already configured
-    // 检查是否已配置
     let skill_md = skill_dir.join("SKILL.md");
-    let launch_bat = skill_dir.join("launch.bat");
-    let launch_ps1 = skill_dir.join("launch.ps1");
 
-    let mut needs_reinstall = false;
-    if legacy_skill_md.exists() || legacy_launch_simple.exists() || legacy_launch_universal.exists() {
-        needs_reinstall = true;
-    }
-
+    // Only install SKILL.md, no need for bat/ps1 scripts anymore
+    // 只安装 SKILL.md，不再需要 bat/ps1 脚本
     let should_write_skill = match fs::read_to_string(&skill_md) {
-        Ok(existing) => !existing.to_lowercase().contains("command:"),
+        Ok(existing) => !existing.contains("\"C:\\\\Program Files\\\\Skill Launcher\\\\skill-launcher.exe\""),
         Err(_) => true,
     };
 
-    if should_write_skill {
-        needs_reinstall = true;
-    }
-
-    let should_write_launch = match fs::read_to_string(&launch_bat) {
-        Ok(existing) => !existing.contains("Skill Launcher Windows Startup Script"),
-        Err(_) => true,
-    };
-
-    let should_write_launch_ps1 = match fs::read_to_string(&launch_ps1) {
-        Ok(existing) => !existing.contains("launch.bat"),
-        Err(_) => true,
-    };
-
-    if needs_reinstall && skill_dir.exists() {
-        fs::remove_dir_all(&skill_dir)
-            .map_err(|e| format!("Failed to remove old skill directory: {}", e))?;
-    }
-
-    // Create directories if they don't exist
-    // 如果目录不存在则创建
-    fs::create_dir_all(&skill_dir).map_err(|e| format!("Failed to create skill directory: {}", e))?;
-
-    let mut wrote_any = false;
-
-    if needs_reinstall || should_write_skill {
-        println!("📝 Installing Claude Code SKILL.md...");
-        fs::write(&skill_md, SKILL_MD_CONTENT).map_err(|e| format!("Failed to write SKILL.md: {}", e))?;
-        wrote_any = true;
-    }
-
-    if needs_reinstall || should_write_launch {
-        println!("📝 Installing Claude Code launch.bat...");
-        fs::write(&launch_bat, LAUNCH_BAT_CONTENT).map_err(|e| format!("Failed to write launch.bat: {}", e))?;
-        wrote_any = true;
-    }
-
-    if needs_reinstall || should_write_launch_ps1 {
-        println!("📝 Installing Claude Code launch.ps1...");
-        fs::write(&launch_ps1, LAUNCH_PS1_CONTENT).map_err(|e| format!("Failed to write launch.ps1: {}", e))?;
-        wrote_any = true;
-    }
-
-    if !wrote_any {
+    if !should_write_skill {
         println!("✅ Claude Code skill already configured");
         return Ok(());
     }
 
+    // Create directory if not exists
+    fs::create_dir_all(&skill_dir).map_err(|e| format!("Failed to create skill directory: {}", e))?;
+
+    println!("📝 Installing Claude Code SKILL.md...");
+    fs::write(&skill_md, SKILL_MD_CONTENT).map_err(|e| format!("Failed to write SKILL.md: {}", e))?;
+
     println!("✅ Claude Code skill configured successfully!");
     println!("📍 Location: {}", skill_dir.display());
-    println!("ℹ️  Restart Claude Code CLI to use /skill-launcher command");
 
     Ok(())
+}
+
+/// Get project name from path for window title
+/// 从路径获取项目名用于窗口标题
+fn get_project_name(path: &str) -> String {
+    // Handle "." or "./" as current directory
+    if path == "." || path == "./" {
+        if let Ok(dir) = std::env::current_dir() {
+            if let Some(name) = dir.file_name() {
+                if let Some(name_str) = name.to_str() {
+                    return name_str.to_string();
+                }
+                return name.to_string_lossy().to_string();
+            }
+        }
+        return "Global".to_string();
+    }
+
+    if let Some(last_sep) = path.rfind(['\\', '/']) {
+        let name = &path[last_sep + 1..];
+        if !name.is_empty() {
+            return name.to_string();
+        }
+    }
+    "Global".to_string()
 }
 
 /// Shortcut configuration from frontend
@@ -174,7 +245,6 @@ fn load_settings() -> AppSettings {
 fn save_settings(settings: &AppSettings) -> Result<(), String> {
     let path = get_settings_path();
 
-    // Create directory if not exists / 如果目录不存在则创建
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
@@ -205,7 +275,6 @@ fn config_to_shortcut(config: &ShortcutConfig) -> tauri_plugin_global_shortcut::
         modifiers |= Modifiers::SUPER;
     }
 
-    // Parse key code / 解析键码
     let code = match config.key.as_str() {
         "Space" => Code::Space,
         "KeyA" => Code::KeyA,
@@ -270,7 +339,7 @@ fn config_to_shortcut(config: &ShortcutConfig) -> tauri_plugin_global_shortcut::
         "Enter" => Code::Enter,
         "Tab" => Code::Tab,
         "Escape" => Code::Escape,
-        _ => Code::Space, // Default to Space / 默认为空格键
+        _ => Code::Space,
     };
 
     let mods = if modifiers.is_empty() { None } else { Some(modifiers) };
@@ -282,6 +351,13 @@ fn config_to_shortcut(config: &ShortcutConfig) -> tauri_plugin_global_shortcut::
 #[tauri::command]
 fn health_check() -> String {
     "ok".to_string()
+}
+
+/// Get project root path
+/// 获取项目根路径
+#[tauri::command]
+fn get_project_root(state: tauri::State<ProjectState>) -> Option<String> {
+    state.root_path.lock().ok()?.clone()
 }
 
 /// Send command to Claude Code CLI window
@@ -307,9 +383,6 @@ async fn send_to_claude_cli(
 
     let hwnd_value = hwnd.unwrap_or(0);
 
-    // 使用 PowerShell 将命令发送到终端窗口
-    // 使用 Add-Type 引入 Windows API 来激活特定窗口
-    // Use PowerShell with Windows API to activate specific window
     let script = format!(
         r#"
 Add-Type @"
@@ -324,7 +397,6 @@ Add-Type @"
   }}
 "@
 
-# 优先使用传入的窗口句柄 / Prefer provided window handle
 $targetHwnd = {hwnd_value}
 $found = $false
 if ($targetHwnd -ne 0) {{
@@ -336,14 +408,10 @@ if ($targetHwnd -ne 0) {{
     }}
 }}
 
-# 设置剪贴板 / Set clipboard
 Set-Clipboard -Value "{cmd}"
 
-# 等待剪贴板设置完成 / Wait for clipboard
 Start-Sleep -Milliseconds 300
 
-# 尝试找到并激活 Windows Terminal 或 PowerShell 窗口（回退方案）
-# Try to find and activate Windows Terminal or PowerShell window (fallback)
 if (-not $found) {{
     $processes = Get-Process | Where-Object {{
         $_.MainWindowTitle -ne "" -and `
@@ -371,7 +439,6 @@ if (-not $found) {{
     }}
 }}
 
-# 发送 Ctrl+V 粘贴命令 / Send Ctrl+V to paste command
 $wshell = New-Object -ComObject WScript.Shell
 $wshell.SendKeys("^(v)")
 
@@ -403,21 +470,18 @@ fn update_shortcut(shortcut: ShortcutConfig, app_handle: tauri::AppHandle) -> Re
     let settings = AppSettings { shortcut: shortcut.clone() };
     save_settings(&settings)?;
 
-    // Re-register the shortcut / 重新注册快捷键
     #[cfg(desktop)]
     {
         use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
         println!("正在更新全局快捷键...");
 
-        // First, unregister all shortcuts / 先注销所有快捷键
         if let Err(e) = app_handle.global_shortcut().unregister_all() {
             eprintln!("警告: 注销快捷键失败: {}", e);
         } else {
             println!("✓ 已注销旧快捷键");
         }
 
-        // Register new shortcut / 注册新快捷键
         let new_shortcut = config_to_shortcut(&shortcut);
         let shortcut_str = format!(
             "{}{}{}{}{}",
@@ -432,7 +496,6 @@ fn update_shortcut(shortcut: ShortcutConfig, app_handle: tauri::AppHandle) -> Re
         let window_clone = window.clone();
         let handler = move |_app: &tauri::AppHandle, _shortcut: &tauri_plugin_global_shortcut::Shortcut, _event: tauri_plugin_global_shortcut::ShortcutEvent| {
             println!("快捷键被触发！");
-            // Toggle window visibility / 切换窗口可见性
             if window_clone.is_visible().unwrap_or(false) {
                 let _ = window_clone.hide();
             } else {
@@ -461,51 +524,113 @@ fn update_shortcut(shortcut: ShortcutConfig, app_handle: tauri::AppHandle) -> Re
 /// 初始化并运行 Tauri 应用
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Load settings / 加载设置
-    let settings = load_settings();
+    // Parse CLI arguments
+    // 解析命令行参数
+    let mut project_root: Option<String> = None;
     let mut target_hwnd: Option<i64> = None;
 
-    // Parse CLI args for target window handle
-    let mut args = std::env::args().peekable();
-    while let Some(arg) = args.next() {
-        if let Some(value) = arg.strip_prefix("--target-hwnd=") {
-            target_hwnd = value.parse::<i64>().ok();
-            continue;
-        }
-        if arg == "--target-hwnd" {
-            if let Some(next) = args.peek() {
-                target_hwnd = next.parse::<i64>().ok();
-                let _ = args.next();
+    let args: Vec<String> = std::env::args().collect();
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--project-root" if i + 1 < args.len() => {
+                project_root = Some(args[i + 1].clone());
+                i += 2;
+            }
+            arg if arg.starts_with("--project-root=") => {
+                project_root = Some(arg[14..].to_string());
+                i += 1;
+            }
+            "--target-hwnd" if i + 1 < args.len() => {
+                target_hwnd = args[i + 1].parse::<i64>().ok();
+                i += 2;
+            }
+            arg if arg.starts_with("--target-hwnd=") => {
+                target_hwnd = arg[14..].parse::<i64>().ok();
+                i += 1;
+            }
+            _ => {
+                i += 1;
             }
         }
     }
 
+    // Check if this project already has a window open
+    // 检查该项目的窗口是否已打开
+    if let Some(ref root) = project_root {
+        if check_and_activate_existing_window(root) {
+            println!("✅ 已激活现有窗口，退出新实例");
+            std::process::exit(0);
+        }
+    }
+
+    // Load settings
+    // 加载设置
+    let settings = load_settings();
+
+    // Determine window title
+    // 确定窗口标题
+    let window_title = if let Some(ref root) = project_root {
+        let project_name = get_project_name(root);
+        format!("Skill Launcher - {}", project_name)
+    } else {
+        "Skill Launcher".to_string()
+    };
+
+    // Build window label from project path for unique identification
+    // 从项目路径构建窗口标签以实现唯一标识
+    let window_label = if let Some(ref root) = project_root {
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        root.hash(&mut hasher);
+        format!("main_{:X}", hasher.finish())
+    } else {
+        "main".to_string()
+    };
+
+    println!("🚀 Starting Skill Launcher...");
+    if let Some(ref root) = project_root {
+        println!("📁 Project root: {}", root);
+    }
+    println!("📋 Window label: {}", window_label);
+    println!("📝 Window title: {}", window_title);
+
+    // Note: Tauri 2.0 requires the window to be defined in tauri.conf.json
+    // We'll update the title after the window is created
+    // 注意：Tauri 2.0 要求在 tauri.conf.json 中定义窗口
+    // 我们将在窗口创建后更新标题
+
     tauri::Builder::default()
+        .manage(ProjectState {
+            root_path: Mutex::new(project_root.clone()),
+        })
         .manage(TargetWindowState {
             hwnd: Mutex::new(target_hwnd),
         })
-        // Register shell plugin for executing commands
-        // 注册 shell 插件用于执行命令
         .plugin(tauri_plugin_shell::init())
-        // Register fs plugin for file operations
-        // 注册 fs 插件用于文件操作
         .plugin(tauri_plugin_fs::init())
-        // Register global shortcut plugin
-        // 注册全局快捷键插件
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        // Register commands / 注册命令
         .invoke_handler(tauri::generate_handler![
             update_shortcut,
             health_check,
             skills::scan_skills_directory,
-            send_to_claude_cli
+            send_to_claude_cli,
+            get_project_root,
         ])
-        // Setup application
-        // 设置应用
         .setup(move |app| {
-            // Get main window
-            // 获取主窗口
             let window = app.get_webview_window("main").unwrap();
+
+            // Update window title with project name
+            // 更新窗口标题显示项目名
+            if let Err(e) = window.set_title(&window_title) {
+                eprintln!("警告: 无法设置窗口标题: {}", e);
+            }
+
+            // Set environment variable for skills module
+            // 为 skills 模块设置环境变量
+            if let Some(ref root) = project_root {
+                std::env::set_var("SKILL_LAUNCHER_PROJECT_ROOT", root);
+            }
 
             // Auto-configure Claude Code skill on first run
             // 首次运行时自动配置 Claude Code skill
@@ -520,7 +645,6 @@ pub fn run() {
                 use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
                 println!("正在注册全局快捷键...");
-                println!("配置: Ctrl+Shift+P");
 
                 let shortcut = config_to_shortcut(&settings.shortcut);
                 let shortcut_str = format!(
@@ -537,8 +661,6 @@ pub fn run() {
                 let window_clone = window.clone();
                 let handler = move |_app: &tauri::AppHandle, _shortcut: &tauri_plugin_global_shortcut::Shortcut, _event: tauri_plugin_global_shortcut::ShortcutEvent| {
                     println!("快捷键被触发！");
-                    // Toggle window visibility
-                    // 切换窗口可见性
                     if window_clone.is_visible().unwrap_or(false) {
                         let _ = window_clone.hide();
                     } else {
@@ -547,8 +669,6 @@ pub fn run() {
                     }
                 };
 
-                // Try to register the shortcut, log warning if failed
-                // 尝试注册快捷键，失败时记录警告
                 println!("步骤1: 设置快捷键处理器...");
                 if let Err(e) = app.global_shortcut().on_shortcut(shortcut, handler) {
                     eprintln!("❌ 错误: 无法设置快捷键处理器: {}", e);
@@ -565,7 +685,7 @@ pub fn run() {
                     eprintln!("  3. 权限不足");
                 } else {
                     println!("✅ 成功: 快捷键已注册 - {}", shortcut_str);
-                    println!("现在可以按 Ctrl+Shift+P 来显示/隐藏窗口");
+                    println!("现在可以按快捷键来显示/隐藏窗口");
                 }
             }
 

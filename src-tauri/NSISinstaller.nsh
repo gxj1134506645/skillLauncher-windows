@@ -6,10 +6,11 @@
 
 ; 安装位置 / Installation directory
 InstallDir "$LOCALAPPDATA\Programs\skill-launcher"
+; Use Tauri's default output path (do not override OutFile).
 
 ; 安装页面 / Installation pages
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE
+; License page requires a file; omit to avoid build failure.
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
@@ -49,7 +50,9 @@ Section "Skill Launcher" SecApp
   RMDir /r "$PROGRAMFILES(X86)\Skill Launcher"
   cancel:
   SetOutPath $INSTDIR
-  File /r "${PROJECT_DIR}\src-tauri\target\release\*"
+  ; Only include the built app and resources to keep the installer small and reliable.
+  File "..\..\skill-launcher.exe"
+  File /r "..\..\resources\*"
 
   ; 创建快捷方式 / Create shortcuts
   CreateShortcut "$DESKTOP\Skill Launcher.lnk" "$INSTDIR\skill-launcher.exe"
@@ -62,54 +65,23 @@ Section "Skill Launcher" SecApp
   RMDir /r "$PROFILE\.claude\skills\skill-launcher"
   CreateDirectory "$PROFILE\.claude\skills\skill-launcher"
 
-  ; 创建 SKILL.md / Create SKILL.md
+  ; 创建 SKILL.md / Create SKILL.md (direct exe command, no intermediate scripts)
   FileOpen $0 "$PROFILE\.claude\skills\skill-launcher\SKILL.md" w
   FileWrite $0 "---$\r$\n"
   FileWrite $0 "name: skill-launcher$\r$\n"
   FileWrite $0 "description: Launch the Skill Launcher GUI to browse skills and copy the skill name to clipboard.$\r$\n"
-  FileWrite $0 "command: \"cmd /c launch.bat\"$\r$\n"
+  FileWrite $0 "command: $\"\\\"C:\\\\Program Files\\\\Skill Launcher\\\\skill-launcher.exe\\\" --project-root .$\"$\r$\n"
   FileWrite $0 "---$\r$\n"
   FileWrite $0 "$\r$\n"
   FileWrite $0 "# Skill Launcher for Windows$\r$\n"
   FileWrite $0 "$\r$\n"
-  FileWrite $0 "快速启动 Claude Code Skills 的 Windows 应用。$\r$\n"
+  FileWrite $0 "Launch the Skill Launcher GUI when user inputs `/skill-launcher`.$\r$\n"
   FileWrite $0 "$\r$\n"
-  FileWrite $0 "## 使用方法$\r$\n"
-  FileWrite $0 "$\r$\n"
-  FileWrite $0 "安装完成后，在 Claude Code CLI 中输入:$\r$\n"
-  FileWrite $0 "  /skill-launcher$\r$\n"
-  FileWrite $0 "$\r$\n"
-  FileWrite $0 "应用窗口会弹出，显示所有可用的 skills，点击即可复制名称到剪贴板。$\r$\n"
+  FileWrite $0 "Notes:$\r$\n"
+  FileWrite $0 "- The window displays both project-level and user-level skills.$\r$\n"
+  FileWrite $0 "- Click any skill name to copy it to clipboard.$\r$\n"
+  FileWrite $0 "- Each project gets its own window, and the same project reuses the existing window.$\r$\n"
   FileClose $0
-
-  ; 创建 launch.bat（自动查找 exe）/ Create launch.bat with auto-detection
-  FileOpen $1 "$PROFILE\.claude\skills\skill-launcher\launch.bat" w
-  FileWrite $1 "@echo off$\r$\n"
-  FileWrite $1 "REM Auto-find and launch Skill Launcher$\r$\n"
-  FileWrite $1 "$\r$\n"
-  FileWrite $1 "set \"EXE_PATH=\"$\r$\n"
-  FileWrite $1 "$\r$\n"
-  FileWrite $1 "if exist \"%%LOCALAPPDATA%%\\Programs\\skill-launcher\\skill-launcher.exe\" ($\r$\n"
-  FileWrite $1 "    set \"EXE_PATH=%%LOCALAPPDATA%%\\Programs\\skill-launcher\\skill-launcher.exe\"$\r$\n"
-  FileWrite $1 "    goto :launch$\r$\n"
-  FileWrite $1 ")$\r$\n"
-  FileWrite $1 "$\r$\n"
-  FileWrite $1 "if exist \"%%PROGRAMFILES%%\\Skill Launcher\\skill-launcher.exe\" ($\r$\n"
-  FileWrite $1 "    set \"EXE_PATH=%%PROGRAMFILES%%\\Skill Launcher\\skill-launcher.exe\"$\r$\n"
-  FileWrite $1 "    goto :launch$\r$\n"
-  FileWrite $1 ")$\r$\n"
-  FileWrite $1 "$\r$\n"
-  FileWrite $1 "echo Error: Skill Launcher not found!$\r$\n"
-  FileWrite $1 "timeout /t 3$\r$\n"
-  FileWrite $1 "exit /b 1$\r$\n"
-  FileWrite $1 "$\r$\n"
-  FileWrite $1 ":launch$\r$\n"
-  FileWrite $1 "REM Capture current foreground window handle to target the correct CLI window$\r$\n"
-  FileWrite $1 "set \"TARGET_HWND=\"$\r$\n"
-  FileWrite $1 "for /f %%i in ('powershell -NoProfile -Command \"$def='using System; using System.Runtime.InteropServices; public class Win32 { [DllImport(^\"user32.dll^\" )] public static extern IntPtr GetForegroundWindow(); }'; Add-Type -TypeDefinition $def -ErrorAction SilentlyContinue; [Win32]::GetForegroundWindow().ToInt64()\"') do set \"TARGET_HWND=%%i\"$\r$\n"
-  FileWrite $1 "if defined TARGET_HWND (start \"\" \"%%EXE_PATH%%\" --target-hwnd %%TARGET_HWND%%) else start \"\" \"%%EXE_PATH%%\"$\r$\n"
-  FileWrite $1 "exit /b 0$\r$\n"
-  FileClose $1
 
 SectionEnd
 
