@@ -207,6 +207,12 @@ export function SkillList({ skills, selectedIndex, onSkillClick }: SkillListProp
                 <div className="skill-item-name">
                   {skill.displayName || skill.name}
                 </div>
+                {/* Tag 标签 / Tag label */}
+                {skill.tag && (
+                  <div className={`skill-tag ${skill.tag}`}>
+                    {skill.tag === "project" ? "PROJ" : "USER"}
+                  </div>
+                )}
               </div>
               {skill.description && (
                 <div className="skill-item-description">{skill.description}</div>

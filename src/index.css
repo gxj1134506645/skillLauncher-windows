@@ -144,6 +144,33 @@ html, body, #root {
   opacity: 0.85; /* 稍微透明 / Slightly transparent */
 }
 
+/* Tag 标签样式 / Tag label styles - 区分 project 和 user */
+.skill-tag {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.skill-tag.project {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+}
+
+.skill-tag.user {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #e1bee7;
+}
+
 .skill-item-description {
   font-size: 12px;
   color: #616161;

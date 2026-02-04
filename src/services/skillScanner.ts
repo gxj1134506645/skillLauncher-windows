@@ -20,6 +20,7 @@ export class SkillScanner {
           description: string;
           category: string;
           marketplace: string;
+          tag: string;
           path: string;
           command: string;
         }>
@@ -32,6 +33,7 @@ export class SkillScanner {
         description: fs.description,
         category: fs.category,
         marketplace: fs.marketplace,
+        tag: fs.tag,
         path: fs.path,
         command: fs.command,
       }));

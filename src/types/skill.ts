@@ -15,6 +15,8 @@ export interface Skill {
   category?: string;
   /** Skill marketplace source / Skill 来源市场 */
   marketplace?: string;
+  /** Tag: "project" 项目技能, "user" 用户技能 */
+  tag?: string;
   /** Skill icon / Skill 图标 */
   icon?: string;
   /** Skill shortcut key / Skill 快捷键 */

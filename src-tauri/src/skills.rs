@@ -188,6 +188,9 @@ pub struct FrontendSkill {
     pub category: String,
     #[serde(rename = "marketplace")]
     pub marketplace: String,
+    /// Tag标识: "project" 项目技能, "user" 用户技能
+    /// Tag: "project" for project skills, "user" for user skills
+    pub tag: String,
     pub path: String,
     pub command: String,
 }
@@ -230,7 +233,8 @@ fn get_skill_directories() -> Vec<PathBuf> {
 
 /// Scan a single directory and append skills with de-duplication
 /// 扫描单个目录并去重追加 skills
-fn scan_directory(dir: &PathBuf, skills: &mut Vec<FrontendSkill>, seen: &mut HashSet<String>) -> Result<(), String> {
+/// tag: "project" 项目技能, "user" 用户技能
+fn scan_directory(dir: &PathBuf, tag: &str, skills: &mut Vec<FrontendSkill>, seen: &mut HashSet<String>) -> Result<(), String> {
     if !dir.exists() {
         return Ok(());
     }
@@ -252,7 +256,7 @@ fn scan_directory(dir: &PathBuf, skills: &mut Vec<FrontendSkill>, seen: &mut Has
             }
         }
 
-        if let Some(skill) = parse_skill(&entry.path()) {
+        if let Some(skill) = parse_skill(&entry.path(), tag) {
             if seen.insert(skill.name.clone()) {
                 skills.push(skill);
             }
@@ -269,8 +273,18 @@ pub fn scan_skills_directory() -> Result<Vec<FrontendSkill>, String> {
     let mut skills = vec![];
     let mut seen: HashSet<String> = HashSet::new();
 
-    for dir in get_skill_directories().iter() {
-        scan_directory(dir, &mut skills, &mut seen)?;
+    let dirs = get_skill_directories();
+    let user_skills_dir = get_skills_dir();
+
+    for dir in dirs.iter() {
+        // 判断是项目技能还是用户技能
+        // Determine if it's a project skill or user skill
+        let tag = if dir == &user_skills_dir {
+            "user"
+        } else {
+            "project"
+        };
+        scan_directory(dir, tag, &mut skills, &mut seen)?;
     }
 
     Ok(skills)
@@ -278,7 +292,8 @@ pub fn scan_skills_directory() -> Result<Vec<FrontendSkill>, String> {
 
 /// Parse a single skill from its directory
 /// 从目录解析单个 skill
-fn parse_skill(skill_path: &PathBuf) -> Option<FrontendSkill> {
+/// tag: "project" 项目技能, "user" 用户技能
+fn parse_skill(skill_path: &PathBuf, tag: &str) -> Option<FrontendSkill> {
     // Convert OsStr to String / 转换 OsStr 为 String
     let skill_name = skill_path.file_name()?.to_str()?.to_string();
 
@@ -303,6 +318,7 @@ fn parse_skill(skill_path: &PathBuf) -> Option<FrontendSkill> {
         description,
         category,
         marketplace,
+        tag: tag.to_string(),
         // Convert Cow<str> to String / 转换 Cow<str> 为 String
         path: skill_path.to_string_lossy().to_string(),
         command: format!("claude /{}", skill_name),
@@ -316,7 +332,6 @@ fn parse_skill_md(content: &str) -> (Option<String>, Option<String>, String) {
     // 使用 \r?\n 匹配两种换行格式 / Use \r?\n to match both line ending formats
     let front_matter_regex = regex::Regex::new(r"^---\r?\n([\s\S]+?)\r?\n---").unwrap();
 
-    let category = "general".to_string();
     let mut name = None;
     let mut display_name = None;
     let mut description = None;
