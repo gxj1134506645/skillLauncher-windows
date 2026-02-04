@@ -8,15 +8,12 @@
     "shell:allow-open",
     "global-shortcut:allow-register",
     "global-shortcut:allow-unregister",
-    "fs:allow-read-text-file",
-    {
-      "identifier": "fs:scope",
-      "allow": [
-        {
-          "path": "$APPCONFIG/**"
-        }
-      ]
-    },
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "fs:allow-mkdir",
+    "fs:allow-applocaldata-read",
+    "fs:allow-applocaldata-write",
+    "fs:scope-applocaldata-recursive",
     {
       "identifier": "shell:allow-execute",
       "allow": [
