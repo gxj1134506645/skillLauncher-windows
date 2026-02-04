@@ -170,18 +170,22 @@ interface SkillListProps {
   selectedIndex: number;
   /** Callback when skill is clicked / Skill 被点击时的回调 */
   onSkillClick: (skill: Skill, index: number) => void;
+  /** Function to check if skill was recently used / 检查技能是否最近使用过 */
+  isRecentUsed?: (skillName: string) => boolean;
 }
 
 /**
  * Skill list component
  * Skill 列表组件
  */
-export function SkillList({ skills, selectedIndex, onSkillClick }: SkillListProps) {
+export function SkillList({ skills, selectedIndex, onSkillClick, isRecentUsed }: SkillListProps) {
   return (
     <div className="skill-list">
       {skills.map((skill, index) => {
         // 获取 skill 对应的 Emoji / Get emoji for skill
         const emoji = getSkillEmoji(skill.name);
+        // 检查是否最近使用 / Check if recently used
+        const isRecent = isRecentUsed?.(skill.name) ?? false;
 
         return (
           <div
@@ -212,6 +216,10 @@ export function SkillList({ skills, selectedIndex, onSkillClick }: SkillListProp
                   <div className={`skill-tag ${skill.tag}`}>
                     {skill.tag === "project" ? "PROJ" : "USER"}
                   </div>
+                )}
+                {/* 最近使用标签 / Recent usage label */}
+                {isRecent && (
+                  <div className="skill-tag recent">最近使用</div>
                 )}
               </div>
               {skill.description && (

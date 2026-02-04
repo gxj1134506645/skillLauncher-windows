@@ -1,6 +1,6 @@
-import { useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useState, useMemo, useRef } from "react";
 import { Input, Spinner, Text, Button } from "@fluentui/react-components";
-import { Search24Regular, Dismiss24Regular } from "@fluentui/react-icons";
+import { Search24Regular, Dismiss24Regular, Checkmark24Regular } from "@fluentui/react-icons";
 import { SkillList } from "./components/SkillList";
 import { useSkills } from "./hooks/useSkills";
 import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
@@ -13,24 +13,49 @@ import type { Skill } from "./types/skill";
  * 主应用组件
  */
 function App() {
+  // 追踪渲染次数 / Track render count
+  const renderCount = useRef(0);
+  renderCount.current++;
+
   // Load skills / 加载 Skills
   const { skills, loading, error } = useSkills();
 
-  // Load skill usage / 加载 Skill 使用记录
-  const { recordUsage, getSortedSkills } = useSkillUsage();
+  // 调试日志 / Debug log - 追踪 skills 状态
+  console.log("🔍 App render / App 渲染:", {
+    renderCount: renderCount.current,
+    skillsLength: skills.length,
+    loading,
+    error,
+    skills: skills.map(s => s.name)
+  });
 
-  // 应用使用记录排序 / Apply usage-based sorting
-  const sortedSkills = useMemo(() => getSortedSkills(skills), [skills, getSortedSkills]);
+  // Load skill usage / 加载 Skill 使用记录
+  const { recordUsage, getSortedSkills, isRecentUsed } = useSkillUsage();
+
+  // 点击成功提示状态 / Click success toast state
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
 
   // Input parser / 输入解析器
   const {
     rawInput,
     setRawInput,
     parsedInput,
-    filteredSkills,
+    filteredSkills: filteredRawSkills,
     executeSkill,
     clearInput,
-  } = useInputParser(sortedSkills, recordUsage);
+  } = useInputParser(skills, recordUsage);
+
+  // 调试日志 / Debug log - 追踪 filteredSkills
+  console.log("🎯 App filteredSkills / App 过滤后的技能:", {
+    filteredRawSkillsLength: filteredRawSkills.length,
+    rawInput
+  });
+
+  // 根据使用记录排序：最近使用的排在前面 / Sort by usage: recent skills first
+  const filteredSkills = useMemo(() => {
+    return getSortedSkills(filteredRawSkills);
+  }, [filteredRawSkills, getSortedSkills]);
 
   // Tab 自动补全功能 / Tab auto-complete feature
   // 注意：必须在 useKeyboardNavigation 之前定义 / Must be defined before useKeyboardNavigation
@@ -58,7 +83,14 @@ function App() {
       // 它会复制 skill 名称到剪贴板
       await executeSkill(index);
 
-      // 复制后保持窗口 / Keep window visible after copy
+      // 显示成功提示 / Show success toast
+      setToastMessage("已复制，可粘贴到 CLI");
+      setToastVisible(true);
+
+      // 2秒后隐藏提示 / Hide toast after 2 seconds
+      setTimeout(() => {
+        setToastVisible(false);
+      }, 2000);
     } catch (err) {
       console.error(`执行 skill 失败 / Failed to execute skill:`, err);
       // 显示错误提示给用户 / Show error to user
@@ -92,6 +124,10 @@ function App() {
     }
   };
 
+  // 调试日志 / Debug log - 追踪渲染决策
+  const renderDecision = loading ? "LOADING" : error ? `ERROR: ${error}` : filteredSkills.length === 0 ? "EMPTY" : "SHOW_LIST";
+  console.log("🎨 Render decision / 渲染决策:", renderDecision);
+
   return (
     <div className="container">
       {/* Header with search / 顶部栏：搜索 */}
@@ -117,6 +153,14 @@ function App() {
           autoFocus
         />
       </div>
+
+      {/* Success toast / 成功提示 */}
+      {toastVisible && toastMessage && (
+        <div className="toast toast-success">
+          <Checkmark24Regular />
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
       {/* Current mode indicator / 当前模式指示器 */}
       {parsedInput && parsedInput.mode !== "search" && (
@@ -146,6 +190,7 @@ function App() {
           skills={filteredSkills}
           selectedIndex={selectedIndex}
           onSkillClick={handleSkillClick}
+          isRecentUsed={isRecentUsed}
         />
       )}
     </div>

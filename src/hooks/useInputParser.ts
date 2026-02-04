@@ -27,6 +27,9 @@ export function useInputParser(
   skills: Skill[],
   onSkillExecuted?: (skillName: string) => void
 ) {
+  // 调试日志 / Debug log - 追踪传入的 skills
+  console.log("📥 useInputParser called with skills:", skills.length, skills.map(s => s.name));
+
   // 原始输入 / Raw input
   const [rawInput, setRawInput] = useState("");
 
@@ -70,7 +73,14 @@ export function useInputParser(
    * Filter skills based on input mode
    */
   const filteredSkills = useMemo(() => {
+    console.log("🔄 filteredSkills useMemo called:", {
+      skillsLength: skills.length,
+      rawInput,
+      parsedInput
+    });
+
     if (!parsedInput) {
+      console.log("⚠️ parsedInput is null, returning skills:", skills.length);
       return skills;
     }
 
@@ -80,6 +90,7 @@ export function useInputParser(
       console.log("🔍 搜索模式 / Search mode:", { query, rawInput, totalSkills: skills.length });
 
       if (!query) {
+        console.log("✅ Empty query, returning all skills:", skills.length);
         return skills;
       }
 

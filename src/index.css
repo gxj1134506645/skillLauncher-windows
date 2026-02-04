@@ -171,6 +171,55 @@ html, body, #root {
   border: 1px solid #e1bee7;
 }
 
+/* 最近使用金色标签 / Recent usage gold label */
+.skill-tag.recent {
+  background-color: #fff8e1;
+  color: #f57c00;
+  border: 1px solid #ffecb3;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Toast 提示样式 / Toast notification styles */
+.toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1000;
+  animation: slideDown 0.3s ease-out;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toast.toast-success {
+  background-color: #4caf50;
+  color: white;
+}
+
+.toast svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
 .skill-item-description {
   font-size: 12px;
   color: #616161;

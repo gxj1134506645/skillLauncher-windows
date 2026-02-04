@@ -7,33 +7,27 @@ import { SkillScanner } from "../services/skillScanner";
  * 用于加载和管理 Skills 的 Hook
  */
 export function useSkills() {
-  const [skills, setSkills] = useState<Skill[]>([]);
-  const [loading, setLoading] = useState(true);
+  // 初始化时就使用默认技能，避免空状态 / Initialize with default skills to avoid empty state
+  const [skills, setSkills] = useState<Skill[]>(getDefaultSkills);
+  // 初始加载状态设为 false，因为已有默认技能可显示 / Initialize loading as false since we have default skills
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let isMounted = true;
+    let mounted = true;
 
     const loadSkills = async () => {
       try {
-        // 先立即显示默认 skills / Show default skills immediately
-        const defaultSkills = getDefaultSkills();
-        if (isMounted) {
-          console.log("⏳ 先加载默认 skills / Loading default skills first");
-          setSkills(defaultSkills);
-          setLoading(false); // 立即完成加载状态 / Complete loading immediately
-        }
+        console.log("🔄 loadSkills 开始 / loadSkills started");
 
         // 等待 Tauri 完全初始化 / Wait for Tauri to fully initialize
-        // 使用重试策略 / Use retry strategy
         let retries = 0;
-        const maxRetries = 30; // 最多等待 3 秒 / Max wait 3 seconds
+        const maxRetries = 30;
 
-        while (retries < maxRetries) {
+        while (retries < maxRetries && mounted) {
           await new Promise((resolve) => setTimeout(resolve, 100));
 
           try {
-            // 尝试调用 Tauri API 来测试是否就绪 / Try Tauri API to test if ready
             const { invoke } = await import("@tauri-apps/api/core");
             await invoke("health_check");
             console.log("✅ Tauri API 已就绪 / Tauri API is ready");
@@ -42,18 +36,19 @@ export function useSkills() {
             retries++;
             if (retries >= maxRetries) {
               console.warn("⚠️ Tauri API 超时，保持默认 skills / Tauri API timeout, keeping defaults");
-              return;
             }
           }
         }
 
-        // 现在尝试扫描真实 skills / Now try to scan real skills
+        if (!mounted) return;
+
+        // 尝试扫描真实 skills / Try to scan real skills
         console.log("🔍 开始扫描真实 skills / Scanning real skills...");
 
         const scanner = new SkillScanner();
         const scannedSkills = await scanner.scanSkills();
 
-        if (isMounted && scannedSkills.length > 0) {
+        if (mounted && scannedSkills.length > 0) {
           console.log(`✅ 成功加载 ${scannedSkills.length} 个 skills / Successfully loaded ${scannedSkills.length} skills`);
           setSkills(scannedSkills);
         } else {
@@ -61,10 +56,12 @@ export function useSkills() {
         }
       } catch (err) {
         console.error("❌ Failed to load skills:", err);
-        if (isMounted) {
+        if (mounted) {
           setError("加载 skills 失败");
-          // 确保有默认 skills / Ensure default skills exist
-          setSkills(getDefaultSkills());
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
         }
       }
     };
@@ -72,7 +69,7 @@ export function useSkills() {
     loadSkills();
 
     return () => {
-      isMounted = false;
+      mounted = false;
     };
   }, []);
 

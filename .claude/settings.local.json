@@ -49,7 +49,9 @@
       "Bash(Write-Host \"Done\")",
       "Bash(Get-Content \"$env:USERPROFILE\\\\.skill-launcher\\\\settings.json\" -ErrorAction SilentlyContinue)",
       "WebFetch(domain:v2.tauri.app)",
-      "Bash(Get-Content \"$HOME/.claude/skills/commit/SKILL.md\")"
+      "Bash(Get-Content \"$HOME/.claude/skills/commit/SKILL.md\")",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
