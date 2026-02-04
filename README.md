@@ -1,8 +1,7 @@
 <div align="center">
+### 个人主页https://gfish.online/
 
-![FishTech Notes](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204165938617.png)
-
-### https://gfish.online/
+![](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204172326720.png)
 
 ---
 
@@ -16,13 +15,9 @@
 
 ## 安装
 
-下载 [Skill_Launcher_x64-setup.exe](https://github.com/gxj1134506645/skillLauncher-windows/releases/latest)
+下载 [Skill_Launcher_x64-setup.exe](https://github.com/gxj1134506645/skillLauncher-windows/releases/latest) 并运行
 
-![安装](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204165941938.png)
-
-![安装向导](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204165944713.png)
-
-![安装完成](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204165947282.png)
+直接默认安装，千万不要修改安装路径
 
 ---
 
@@ -30,13 +25,7 @@
 
 在 Claude Code CLI 中输入 `/skill-launcher`
 
-![Skills列表](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204170011199.png)
-
-![搜索](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204165954831.png)
-
-![复制](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204170015559.png)
-
-![项目级Skills](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204170019430.png)
+![image-20260204172234829](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204172234915.png)
 
 ---
 
@@ -44,4 +33,16 @@
 
 React 18 + TypeScript + Fluent UI + Tauri 2.0
 
-</div>
+---
+
+## 开发
+
+```powershell
+npm install
+npm run tauri dev
+npm run tauri build
+```
+
+---
+
+欢迎关注公众号 **FishTech Notes**
