@@ -8,8 +8,8 @@ import type { Skill } from "../types/skill";
 
 const USAGE_FILE = "skill-usage.json";
 
-// 最近使用的时间阈值（7天）/ Recent usage threshold (7 days)
-const RECENT_THRESHOLD = 7 * 24 * 60 * 60 * 1000;
+// 最近使用的时间阈值（2天）/ Recent usage threshold (2 days)
+const RECENT_THRESHOLD = 2 * 24 * 60 * 60 * 1000;
 
 /**
  * 解析 Skill 使用记录权重分数
