@@ -13,21 +13,8 @@ import type { Skill } from "./types/skill";
  * 主应用组件
  */
 function App() {
-  // 追踪渲染次数 / Track render count
-  const renderCount = useRef(0);
-  renderCount.current++;
-
   // Load skills / 加载 Skills
   const { skills, loading, error } = useSkills();
-
-  // 调试日志 / Debug log - 追踪 skills 状态
-  console.log("🔍 App render / App 渲染:", {
-    renderCount: renderCount.current,
-    skillsLength: skills.length,
-    loading,
-    error,
-    skills: skills.map(s => s.name)
-  });
 
   // Load skill usage / 加载 Skill 使用记录
   const { recordUsage, getSortedSkills, isRecentUsed } = useSkillUsage();
@@ -42,20 +29,73 @@ function App() {
     setRawInput,
     parsedInput,
     filteredSkills: filteredRawSkills,
-    executeSkill,
     clearInput,
   } = useInputParser(skills, recordUsage);
-
-  // 调试日志 / Debug log - 追踪 filteredSkills
-  console.log("🎯 App filteredSkills / App 过滤后的技能:", {
-    filteredRawSkillsLength: filteredRawSkills.length,
-    rawInput
-  });
 
   // 根据使用记录排序：最近使用的排在前面 / Sort by usage: recent skills first
   const filteredSkills = useMemo(() => {
     return getSortedSkills(filteredRawSkills);
   }, [filteredRawSkills, getSortedSkills]);
+
+  // Execute skill using sorted filteredSkills / 使用排序后的 filteredSkills 执行
+  const executeSelectedSkill = useCallback(
+    async (skillIndex?: number) => {
+      const index = skillIndex ?? 0;
+      const skill = filteredSkills[index];
+
+      if (!skill) {
+        console.warn("没有选中的 skill / No skill selected");
+        return;
+      }
+
+      // 准备复制到剪贴板 / Prepare clipboard content
+      const skillName = skill.name.startsWith("/") ? skill.name.slice(1) : skill.name;
+      const content = `/${skillName}`;
+
+      // 优先使用 navigator.clipboard / Prefer navigator.clipboard
+      let copied = false;
+      if (navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(content);
+          copied = true;
+        } catch {
+          copied = false;
+        }
+      }
+
+      // 回退方案：临时 textarea + execCommand / Fallback: textarea + execCommand
+      if (!copied) {
+        const textarea = document.createElement("textarea");
+        textarea.value = content;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          copied = document.execCommand("copy");
+        } catch {
+          copied = false;
+        } finally {
+          document.body.removeChild(textarea);
+        }
+      }
+
+      if (!copied) {
+        throw new Error("复制到剪贴板失败 / Failed to copy to clipboard");
+      }
+
+      console.log(`✅ Skill 已复制到剪贴板: ${content}`);
+
+      // 记录使用情况 / Record usage
+      recordUsage(skillName);
+
+      // 显示成功提示 / Show success toast
+      setToastMessage("已复制，可粘贴到 CLI");
+      setToastVisible(true);
+      setTimeout(() => setToastVisible(false), 2000);
+    },
+    [filteredSkills, recordUsage]
+  );
 
   // Tab 自动补全功能 / Tab auto-complete feature
   // 注意：必须在 useKeyboardNavigation 之前定义 / Must be defined before useKeyboardNavigation
@@ -78,31 +118,14 @@ function App() {
 
   // Execute selected skill / 复制选中的 Skill
   async function handleExecuteSkill(index: number) {
-    try {
-      // 使用 useInputParser 的 executeSkill 方法
-      // 它会复制 skill 名称到剪贴板
-      await executeSkill(index);
-
-      // 显示成功提示 / Show success toast
-      setToastMessage("已复制，可粘贴到 CLI");
-      setToastVisible(true);
-
-      // 2秒后隐藏提示 / Hide toast after 2 seconds
-      setTimeout(() => {
-        setToastVisible(false);
-      }, 2000);
-    } catch (err) {
-      console.error(`执行 skill 失败 / Failed to execute skill:`, err);
-      // 显示错误提示给用户 / Show error to user
-      alert(`执行失败: ${err}\n请稍后重试 / Please try again later`);
-    }
+    await executeSelectedSkill(index);
   }
 
   // Handle skill click / 处理 Skill 点击
   const handleSkillClick = useCallback((_skill: Skill, index: number) => {
     setSelectedIndex(index);
     handleExecuteSkill(index);
-  }, [setSelectedIndex, handleExecuteSkill]);
+  }, [setSelectedIndex, executeSelectedSkill]);
 
   // Reset selection when search changes / 搜索变化时重置选择
   useEffect(() => {
@@ -123,10 +146,6 @@ function App() {
         return `复制: ${parsedInput.task}`;
     }
   };
-
-  // 调试日志 / Debug log - 追踪渲染决策
-  const renderDecision = loading ? "LOADING" : error ? `ERROR: ${error}` : filteredSkills.length === 0 ? "EMPTY" : "SHOW_LIST";
-  console.log("🎨 Render decision / 渲染决策:", renderDecision);
 
   return (
     <div className="container">

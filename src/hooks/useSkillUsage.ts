@@ -95,25 +95,15 @@ export function useSkillUsage() {
    */
   const recordUsage = useCallback(
     async (skillName: string) => {
-      console.log("📝 recordUsage 被调用 / recordUsage called:", skillName);
-      console.log("🔄 加载状态 / Load status:", { loading, loadCompleted: loadCompletedRef.current });
-
       // 如果加载还未完成，延迟执行记录 / If loading not completed, defer the recording
       if (!loadCompletedRef.current) {
-        console.log("⏳ 加载未完成，等待 100ms 后重试 / Load incomplete, retrying after 100ms");
         await new Promise(resolve => setTimeout(resolve, 100));
-        // 递归调用，等待加载完成 / Recursive call, wait for load to complete
-        if (!loadCompletedRef.current) {
-          console.log("⏳ 仍在加载中，继续执行（保存时会合并现有数据）/ Still loading, continuing (will merge on save)");
-        }
       }
 
       const now = Date.now();
 
       // 使用函数式更新确保使用最新状态 / Use functional update to ensure latest state
       setUsageData((currentData) => {
-        console.log("📊 当前使用数据 / Current usage data:", currentData);
-
         // 查找现有记录 / Find existing record
         const existingIndex = currentData.usage.findIndex((u) => u.name === skillName);
 
@@ -127,7 +117,6 @@ export function useSkillUsage() {
             lastUsed: now,
             count: newUsage[existingIndex].count + 1,
           };
-          console.log("✏️ 更新现有记录 / Update existing record:", skillName, "count:", newUsage[existingIndex].count);
         } else {
           // 创建新记录 / Create new record
           newUsage = [
@@ -138,7 +127,6 @@ export function useSkillUsage() {
               count: 1,
             },
           ];
-          console.log("➕ 创建新记录 / Create new record:", skillName);
         }
 
         const newData = { usage: newUsage };
@@ -152,10 +140,6 @@ export function useSkillUsage() {
             // 使用应用本地数据目录（可写）/ Use app local data dir (writable)
             const appDir = await appLocalDataDir();
             const filePath = await join(appDir, USAGE_FILE);
-            console.log("💾 准备保存到文件 / Preparing to save to file:", filePath);
-
-            // appLocalDataDir 应该是已存在的系统目录，无需手动创建
-            // appLocalDataDir should be an existing system directory, no need to manually create
 
             const encoder = new TextEncoder();
             const jsonStr = JSON.stringify(newData, null, 2);
@@ -163,8 +147,7 @@ export function useSkillUsage() {
             // 防御性检查：避免用空数据覆盖有效数据
             // Defensive check: don't overwrite with empty data
             if (newData.usage.length === 0) {
-              console.warn("⚠️ 警告：试图保存空数据到文件，操作已取消 / Warning: trying to save empty data, operation cancelled");
-              console.log("📂 检查文件是否存在 / Checking if file exists:", filePath);
+              console.warn("警告：试图保存空数据，操作已取消");
               return;
             }
 
@@ -198,26 +181,15 @@ export function useSkillUsage() {
                 const mergedUsage = Array.from(mergedMap.values());
                 const mergedData = { usage: mergedUsage };
 
-                console.log("🔄 合并数据 / Merging data:", {
-                  existing: existingData.usage.length,
-                  new: newUsage.length,
-                  merged: mergedUsage.length
-                });
-
                 await writeFile(filePath, encoder.encode(JSON.stringify(mergedData, null, 2)));
-                console.log("✅ 使用记录保存成功（合并模式）/ Usage data saved successfully (merge mode)!");
                 return;
               }
             } catch (readErr) {
               // 文件不存在或读取失败，继续正常保存流程
               // File doesn't exist or read failed, continue normal save flow
-              console.log("📝 文件不存在或读取失败，将创建新文件 / File not exists or read failed, creating new file");
             }
 
             await writeFile(filePath, encoder.encode(jsonStr));
-
-            console.log("✅ 使用记录保存成功！/ Usage data saved successfully!");
-            console.log("📋 保存的记录 / Saved records:", newUsage.map(u => `${u.name}(${u.count})`));
           } catch (err) {
             console.error("❌ 保存使用记录失败 / Failed to save usage:", err);
             console.error("错误详情 / Error details:", err);
@@ -237,9 +209,6 @@ export function useSkillUsage() {
    * @returns 排序后的 Skill 列表 / Sorted skill list
    */
   const getSortedSkills = useCallback((skills: Skill[]) => {
-    console.log("🔄 getSortedSkills 被调用 / getSortedSkills called, skills:", skills.length);
-    console.log("📊 当前 usageData:", usageData);
-
     // 创建 Skill 名称到记录的映射 / Create mapping from skill name to record
     const usageMap = new Map<string, SkillUsageRecord>();
     usageData.usage.forEach((record) => {
@@ -269,7 +238,6 @@ export function useSkillUsage() {
       return scoreB - scoreA;
     });
 
-    console.log("✅ 排序后前3个 / Top 3 after sort:", sorted.slice(0, 3).map(s => s.name));
     return sorted;
   }, [usageData]);
 
@@ -288,7 +256,6 @@ export function useSkillUsage() {
         }
       }
     });
-    console.log("🏷️ recentSkillNames 更新 / recentSkillNames updated:", Array.from(recentSet));
     return recentSet;
   }, [usageData]);
 
@@ -297,9 +264,7 @@ export function useSkillUsage() {
    * Check if a skill was recently used
    */
   const isRecentUsed = useCallback((skillName: string) => {
-    const result = recentSkillNames.has(skillName);
-    console.log("❓ isRecentUsed 检查 / isRecentUsed check:", skillName, "结果 / result:", result);
-    return result;
+    return recentSkillNames.has(skillName);
   }, [recentSkillNames]);
 
   return {

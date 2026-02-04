@@ -52,7 +52,10 @@
       "Bash(Get-Content \"$HOME/.claude/skills/commit/SKILL.md\")",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(gh release create:*)",
+      "Bash(git tag:*)",
+      "Bash(cd:*)"
     ]
   }
 }

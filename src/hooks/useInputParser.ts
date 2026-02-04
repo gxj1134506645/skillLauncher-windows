@@ -27,9 +27,6 @@ export function useInputParser(
   skills: Skill[],
   onSkillExecuted?: (skillName: string) => void
 ) {
-  // 调试日志 / Debug log - 追踪传入的 skills
-  console.log("📥 useInputParser called with skills:", skills.length, skills.map(s => s.name));
-
   // 原始输入 / Raw input
   const [rawInput, setRawInput] = useState("");
 
@@ -73,24 +70,15 @@ export function useInputParser(
    * Filter skills based on input mode
    */
   const filteredSkills = useMemo(() => {
-    console.log("🔄 filteredSkills useMemo called:", {
-      skillsLength: skills.length,
-      rawInput,
-      parsedInput
-    });
-
     if (!parsedInput) {
-      console.log("⚠️ parsedInput is null, returning skills:", skills.length);
       return skills;
     }
 
     // 搜索模式：模糊匹配 / Search mode: fuzzy match
     if (parsedInput.mode === "search") {
       const query = rawInput.toLowerCase().trim();
-      console.log("🔍 搜索模式 / Search mode:", { query, rawInput, totalSkills: skills.length });
 
       if (!query) {
-        console.log("✅ Empty query, returning all skills:", skills.length);
         return skills;
       }
 
@@ -102,20 +90,16 @@ export function useInputParser(
           skill.displayName?.toLowerCase().includes(query)
       );
 
-      console.log("✅ 搜索结果 / Search results:", filtered.length, "skills");
       return filtered;
     }
 
     // Skill 模式：精确或前缀匹配 / Skill mode: exact or prefix match
-    console.log("🎯 Skill 模式 / Skill mode:", { skillName: parsedInput.skillName, mode: parsedInput.mode });
-
     const filtered = skills.filter(
       (skill) =>
         skill.name === parsedInput.skillName ||
         skill.name.startsWith(parsedInput.skillName)
     );
 
-    console.log("✅ Skill 模式结果 / Skill mode results:", filtered.length, "skills");
     return filtered;
   }, [skills, rawInput, parsedInput]);
 
@@ -141,11 +125,28 @@ export function useInputParser(
         return;
       }
 
+      // 调试日志：输出完整 skill 信息
+      console.log("🎯 执行 skill / Execute skill:", {
+        name: skill.name,
+        displayName: skill.displayName,
+        command: skill.command,
+        tag: skill.tag,
+        marketplace: skill.marketplace,
+        path: skill.path,
+      });
+
       // 准备复制到剪贴板 / Prepare clipboard content
       const skillName = skill.name.startsWith("/") ? skill.name.slice(1) : skill.name;
       const task = parsedInput?.mode === "task" ? parsedInput.task : undefined;
 
       const content = task ? `/${skillName} ${task}` : `/${skillName}`;
+
+      console.log("📋 准备复制的内容 / Content to copy:", {
+        originalName: skill.name,
+        extractedName: skillName,
+        task,
+        finalContent: content,
+      });
 
       // 优先使用 navigator.clipboard / Prefer navigator.clipboard
       let copied = false;
