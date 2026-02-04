@@ -25,6 +25,14 @@
 
 ![image-20260204172234829](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204172234915.png)
 
+
+
+- 直接点击skill复制，粘贴到cli里
+
+![](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204174342480.png)
+
+![](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204174422523.png)
+
 ---
 
 ## 技术栈
