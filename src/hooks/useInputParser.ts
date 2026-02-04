@@ -125,28 +125,11 @@ export function useInputParser(
         return;
       }
 
-      // 调试日志：输出完整 skill 信息
-      console.log("🎯 执行 skill / Execute skill:", {
-        name: skill.name,
-        displayName: skill.displayName,
-        command: skill.command,
-        tag: skill.tag,
-        marketplace: skill.marketplace,
-        path: skill.path,
-      });
-
       // 准备复制到剪贴板 / Prepare clipboard content
       const skillName = skill.name.startsWith("/") ? skill.name.slice(1) : skill.name;
       const task = parsedInput?.mode === "task" ? parsedInput.task : undefined;
 
       const content = task ? `/${skillName} ${task}` : `/${skillName}`;
-
-      console.log("📋 准备复制的内容 / Content to copy:", {
-        originalName: skill.name,
-        extractedName: skillName,
-        task,
-        finalContent: content,
-      });
 
       // 优先使用 navigator.clipboard / Prefer navigator.clipboard
       let copied = false;

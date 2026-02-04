@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, useMemo, useRef } from "react";
+import { useEffect, useCallback, useState, useMemo } from "react";
 import { Input, Spinner, Text, Button } from "@fluentui/react-components";
 import { Search24Regular, Dismiss24Regular, Checkmark24Regular } from "@fluentui/react-icons";
 import { SkillList } from "./components/SkillList";
