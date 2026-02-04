@@ -182,10 +182,12 @@ fn get_skill_marketplace(skill_name: &str, skill_path: &PathBuf) -> String {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FrontendSkill {
     pub name: String,
+    #[serde(rename = "displayName")]
     pub display_name: String,
     pub description: String,
     pub category: String,
-    pub marketplace: String, // 添加 marketplace 字段 / Add marketplace field
+    #[serde(rename = "marketplace")]
+    pub marketplace: String,
     pub path: String,
     pub command: String,
 }
@@ -279,20 +281,25 @@ pub fn scan_skills_directory() -> Result<Vec<FrontendSkill>, String> {
 fn parse_skill(skill_path: &PathBuf) -> Option<FrontendSkill> {
     // Convert OsStr to String / 转换 OsStr 为 String
     let skill_name = skill_path.file_name()?.to_str()?.to_string();
-    let readme_path = skill_path.join("SKILL.md");
 
-    // Read SKILL.md / 读取 SKILL.md
-    let content = fs::read_to_string(&readme_path).ok()?;
+    // 尝试读取 SKILL.md 或 skill.md / Try to read SKILL.md or skill.md
+    let readme_path = skill_path.join("SKILL.md");
+    let skill_path_lower = skill_path.join("skill.md");
+
+    let content = fs::read_to_string(&readme_path)
+        .ok()
+        .or_else(|| fs::read_to_string(&skill_path_lower).ok())?;
 
     // Parse Front Matter / 解析 Front Matter
-    let (name, description, category) = parse_skill_md(&content);
+    let (name, display_name, description) = parse_skill_md(&content);
+    let category = "general".to_string();
 
     // Get marketplace from plugins configuration / 从 plugins 配置获取 marketplace
     let marketplace = get_skill_marketplace(&skill_name, skill_path);
 
     Some(FrontendSkill {
         name: skill_name.clone(),
-        display_name: name.unwrap_or(skill_name.clone()),
+        display_name: display_name.unwrap_or_else(|| name.unwrap_or_else(|| skill_name.clone())),
         description,
         category,
         marketplace,
@@ -302,19 +309,19 @@ fn parse_skill(skill_path: &PathBuf) -> Option<FrontendSkill> {
     })
 }
 
-/// Parse SKILL.md Front Matter
-/// 解析 SKILL.md 的 Front Matter
-fn parse_skill_md(content: &str) -> (Option<String>, String, String) {
-    let front_matter_regex = regex::Regex::new(r"^---\n([\s\S]+?)\n---").unwrap();
+/// Parse SKILL.md Front Matter - 只提取 description 字段
+/// 解析 SKILL.md 的 Front Matter - 仅提取 description 字段
+/// 支持Windows(CRLF)和Unix(LF)换行符 / Supports both Windows (CRLF) and Unix (LF) line endings
+fn parse_skill_md(content: &str) -> (Option<String>, Option<String>, String) {
+    // 使用 \r?\n 匹配两种换行格式 / Use \r?\n to match both line ending formats
+    let front_matter_regex = regex::Regex::new(r"^---\r?\n([\s\S]+?)\r?\n---").unwrap();
 
-    // Initialize category variable / 初始化 category 变量
     let category = "general".to_string();
+    let mut name = None;
+    let mut display_name = None;
+    let mut description = None;
 
-    let (name, description) = if let Some(caps) = front_matter_regex.captures(content) {
-        // Parse key: value pairs / 解析 key: value 对
-        let mut name = None;
-        let mut description = None;
-
+    if let Some(caps) = front_matter_regex.captures(content) {
         for line in caps[1].split('\n') {
             if let Some((key, value)) = line.split_once(':') {
                 let key = key.trim();
@@ -322,37 +329,33 @@ fn parse_skill_md(content: &str) -> (Option<String>, String, String) {
 
                 match key {
                     "name" => name = Some(value.to_string()),
+                    "display_name" | "displayName" => {
+                        display_name = Some(value.trim_matches('"').to_string());
+                    }
                     "description" => {
-                        // Remove surrounding quotes if present / 移除外围引号
-                        let cleaned = value.trim_matches('"');
-                        description = Some(cleaned.to_string());
+                        // 移除外围引号 / Remove surrounding quotes
+                        description = Some(value.trim_matches('"').to_string());
                     }
                     _ => {}
                 }
             }
         }
+    }
 
-        (name, description)
-    } else {
-        (None, Some(content.to_string()))
-    };
-
-    // Extract first paragraph as description if not set / 如果未设置，提取第一段作为描述
-    let description = description.unwrap_or_else(|| {
-        extract_first_paragraph(&content)
-    });
-
-    (name, description, category)
+    // 返回 name, display_name, description / Return name, display_name, description
+    (name, display_name, description.unwrap_or_default())
 }
 
 /// Check if a skill is an official Anthropic skill by reading its SKILL.md
 /// 通过读取 SKILL.md 检查是否为 Anthropic 官方 skill
+/// 支持Windows(CRLF)和Unix(LF)换行符 / Supports both Windows (CRLF) and Unix (LF) line endings
 fn is_official_skill(skill_path: &PathBuf) -> bool {
     let readme_path = skill_path.join("SKILL.md");
 
     if let Ok(content) = fs::read_to_string(&readme_path) {
         // Check for license in front matter / 检查 front matter 中的 license
-        let front_matter_regex = regex::Regex::new(r"^---\n([\s\S]+?)\n---").unwrap();
+        // 使用 \r?\n 匹配两种换行格式 / Use \r?\n to match both line ending formats
+        let front_matter_regex = regex::Regex::new(r"^---\r?\n([\s\S]+?)\r?\n---").unwrap();
 
         if let Some(caps) = front_matter_regex.captures(&content) {
             for line in caps[1].split('\n') {
@@ -370,17 +373,4 @@ fn is_official_skill(skill_path: &PathBuf) -> bool {
     }
 
     false
-}
-
-/// Extract first paragraph
-/// 提取第一段
-fn extract_first_paragraph(content: &str) -> String {
-    content
-        .split("\n\n")
-        .next()
-        .unwrap_or("")
-        .replace('\n', " ")
-        .trim()
-        .chars().take(100)
-        .collect()
 }

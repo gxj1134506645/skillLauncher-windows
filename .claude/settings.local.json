@@ -44,7 +44,12 @@
       "Bash(Remove-Item:*)",
       "mcp__zai-mcp-server__extract_text_from_screenshot",
       "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(cargo:*)",
+      "Bash(Write-Host \"Done\")",
+      "Bash(Get-Content \"$env:USERPROFILE\\\\.skill-launcher\\\\settings.json\" -ErrorAction SilentlyContinue)",
+      "WebFetch(domain:v2.tauri.app)",
+      "Bash(Get-Content \"$HOME/.claude/skills/commit/SKILL.md\")"
     ]
   }
 }

@@ -2,11 +2,9 @@ import { useEffect, useCallback, useMemo } from "react";
 import { Input, Spinner, Text, Button } from "@fluentui/react-components";
 import { Search24Regular, Dismiss24Regular } from "@fluentui/react-icons";
 import { SkillList } from "./components/SkillList";
-import { SettingsDialog } from "./components/SettingsDialog";
 import { useSkills } from "./hooks/useSkills";
 import { useKeyboardNavigation } from "./hooks/useKeyboardNavigation";
 import { useInputParser } from "./hooks/useInputParser";
-import { useSettings } from "./hooks/useSettings";
 import { useSkillUsage } from "./hooks/useSkillUsage";
 import type { Skill } from "./types/skill";
 
@@ -17,9 +15,6 @@ import type { Skill } from "./types/skill";
 function App() {
   // Load skills / 加载 Skills
   const { skills, loading, error } = useSkills();
-
-  // Load settings / 加载设置
-  const { settings, updateShortcut } = useSettings();
 
   // Load skill usage / 加载 Skill 使用记录
   const { recordUsage, getSortedSkills } = useSkillUsage();
@@ -99,7 +94,7 @@ function App() {
 
   return (
     <div className="container">
-      {/* Header with search and settings / 顶部栏：搜索和设置 */}
+      {/* Header with search / 顶部栏：搜索 */}
       <div className="search-container" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
         <Input
           placeholder={getInputPlaceholder()}
@@ -120,10 +115,6 @@ function App() {
           appearance="outline"
           style={{ flex: 1 }}
           autoFocus
-        />
-        <SettingsDialog
-          shortcut={settings.shortcut}
-          onShortcutChange={updateShortcut}
         />
       </div>
 

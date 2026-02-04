@@ -49,6 +49,16 @@
         <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1"/>
         <CustomAction Id="LaunchApplication" Impersonate="yes" FileKey="Path" ExeCommand="[LAUNCHAPPARGS]" Return="asyncNoWait" />
 
+        <!-- Delete user data on uninstall -->
+        <!-- 卸载时删除用户数据 -->
+        <Property Id="DELETEUSERDATA" Value="1" Secure="yes" />
+        <CustomAction Id="DeleteUserDataAction"
+                      Directory="INSTALLDIR"
+                      ExeCommand="cmd.exe /c &quot;rmdir /s /q &quot;%USERPROFILE%\.skill-launcher&quot; 2>nul &amp; rmdir /s /q &quot;%LOCALAPPDATA%\com.skillLauncher.app&quot; 2>nul &amp; rmdir /s /q &quot;%USERPROFILE%\.claude\skills\skill-launcher&quot; 2>nul&quot;"
+                      Execute="deferred"
+                      Impersonate="yes"
+                      Return="ignore" />
+
         <UI>
             <!-- launch app checkbox -->
             <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchApplication">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 and NOT Installed</Publish>
@@ -156,6 +166,9 @@
 
         <InstallExecuteSequence>
           <Custom Action="LaunchApplication" After="InstallFinalize">AUTOLAUNCHAPP AND NOT Installed</Custom>
+          <!-- Delete user data when uninstalling -->
+          <!-- 卸载时删除用户数据 -->
+          <Custom Action="DeleteUserDataAction" Before="RemoveFiles">REMOVE="ALL" AND DELETEUSERDATA=1</Custom>
         </InstallExecuteSequence>
 
         <SetProperty Id="ARPINSTALLLOCATION" Value="[INSTALLDIR]" After="CostFinalize"/>
