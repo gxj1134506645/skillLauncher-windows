@@ -22,6 +22,7 @@
 ## 使用
 
 - 在 Claude Code CLI 中输入 `/skill-launcher`
+  - 如果你的项目有特定的 skill，建议在该项目的 Claude Code CLI 里用 skill launcher 唤起 GUI：从哪个项目的 CLI 触发，就会优先列出该项目的项目级 skill，同时也会列出全局 user skill。
 
 ![image-20260204172234829](https://cdn.jsdelivr.net/gh/gxj1134506645/img-bed@main/images/20260204172234915.png)
 
